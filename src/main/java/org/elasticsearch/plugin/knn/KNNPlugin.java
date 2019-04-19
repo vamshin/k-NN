@@ -19,7 +19,28 @@
 
 package org.elasticsearch.plugin.knn;
 
-import org.elasticsearch.plugins.Plugin;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
-public class KNNPlugin extends Plugin {
+import org.elasticsearch.index.knn.KNNQueryBuilder;
+import org.elasticsearch.index.knn.KNNVectorFieldMapper;
+import org.elasticsearch.index.mapper.Mapper;
+import org.elasticsearch.plugins.MapperPlugin;
+import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.plugins.SearchPlugin;
+
+import static java.util.Collections.singletonList;
+
+public class KNNPlugin extends Plugin implements MapperPlugin, SearchPlugin {
+
+    @Override
+    public Map<String, Mapper.TypeParser> getMappers() {
+        return Collections.singletonMap(KNNVectorFieldMapper.CONTENT_TYPE, new KNNVectorFieldMapper.TypeParser());
+    }
+
+    @Override
+    public List<QuerySpec<?>> getQueries() {
+        return singletonList(new QuerySpec<>(KNNQueryBuilder.NAME, KNNQueryBuilder::new, KNNQueryBuilder::fromXContent));
+    }
 }

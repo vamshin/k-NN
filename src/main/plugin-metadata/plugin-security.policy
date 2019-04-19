@@ -1,2 +1,4 @@
 grant {
+    permission java.lang.RuntimePermission "loadLibrary.KNNIndex";
+//    permission java.lang.RuntimePermission "libKNNIndex.jnilib";
 };

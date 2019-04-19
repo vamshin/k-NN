@@ -47,6 +47,10 @@ plugins {
     id 'java-library'
 }
 
+plugins {
+    id 'nebula.ospackage' version "5.3.0" apply false
+}
+
 allprojects {
     group = 'com.amazon.opendistroforelasticsearch'
     version = "${es_version}"
@@ -74,6 +78,10 @@ esplugin {
   classname 'org.elasticsearch.plugin.knn.KNNPlugin'
 }
 
+task dummy {
+  logger.warn("Vamshi..... ${project.sourceSets}")
+}
+
 task release(type: Copy, group: 'build') {
   dependsOn allprojects*.tasks.build
   from(zipTree(project.tasks.bundlePlugin.outputs.files.getSingleFile()))
@@ -87,6 +95,7 @@ task release(type: Copy, group: 'build') {
 // Dependencies
 //****************************************************************************/
 dependencies {
+  compileOnly "org.elasticsearch:elasticsearch:${es_version}"
 }
 
 licenseFile = rootProject.file('LICENSE.txt')
@@ -95,6 +104,7 @@ noticeFile = rootProject.file('NOTICE.txt')
 licenseHeaders.enabled = false
 dependencyLicenses.enabled = false
 thirdPartyAudit.enabled = false
+
 
 //****************************************************************************/
 // test configurations
@@ -130,6 +140,7 @@ integTestCluster {
 
 run {
   distribution = es_distribution
+  systemProperty "java.library.path", "$rootDir/buildSrc"
 }
 
 checkstyleMain.ignoreFailures = true
