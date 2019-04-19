@@ -1,33 +1,36 @@
 # -*-perl-*-
 
 package.SearchServicesESKNN = {
-    interfaces = (1.0);
+    interfaces = (aes_6.5);
 
-    dependencies = {
-        1.0 = {
-        };
+    deploy = {
+        generic = true;
     };
-
-    test-dependencies = {
-        1.0 = {
-            # If only using JUnit 4, replace with 'Maven-junit_junit = 4.12.x;'
-            # and remove 'useJUnitPlatform' from build.gradle. For mixed
-            # JUnit 4 and 5 tests, keep this and add 'JUnit-4-12-migration = 5.x;'
-            JUnit5 = 5.x;
-        };
+    build-system = custom-build;
+    build-environment = {
+        chroot = basic;
+        network-access = blocked;
     };
-
-    build-system = brazil-gradle;
-
     build-tools = {
-        1.0 = {
+        aes_6.5 = {
+            Gradle = 4.x;
+            JDK10 = 1.0;
             JDK8 = 1.0;
-            BrazilGradle = 4.x;
-            BrazilGradleQualityDefaults = 4.x;
+            S3BinarySafeDownloader = 1.0;
+            BrazilPath = 1.1;
+        };
+    };
+    # Use runtime-dependencies for when you want to bring in additional
+    # packages when deploying.
+    # Use dependencies instead if you intend for these dependencies to
+    # be exported to other packages that build against you.
+    dependencies = {
+        aes_6.5 = {
         };
     };
 
-    targets = {
-        SearchServicesESKNN-1.0 = { type = javalibrary; };
+    runtime-dependencies = {
+        aes_6.5 = {
+        };
     };
 };

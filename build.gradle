@@ -1,89 +1,136 @@
-// Explicitly setting up build script classpath.
+/*
+ *   Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License").
+ *   You may not use this file except in compliance with the License.
+ *   A copy of the License is located at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   or in the "license" file accompanying this file. This file is distributed
+ *   on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *   express or implied. See the License for the specific language governing
+ *   permissions and limitations under the License.
+ */
+
 buildscript {
-  dependencies {
-    classpath brazilGradle.tool('BrazilGradleQualityDefaults')
+  ext {
+    es_version = project.property("es.version")
+    es_group = "org.elasticsearch"
+    offlineRepositoryRoot = rootProject.file("${rootDir.parentFile}/offline-repo").absolutePath
+    es_distribution = 'oss-zip'
+    distribution = es_distribution
   }
-}
 
-/*
- Applies brazil-quality-defaults plugin for enabling brazil specific quality
- rules and reports for quality plugins.
-*/
-apply plugin: 'brazil-quality-defaults'
+    apply from: 'build-tools/amazon-sandbox.gradle'
+    apply from: 'build-tools/repositories.gradle'
 
-/*
- Applies Java plugin for compile and unit test of project's Java source code.
-*/
-apply plugin: 'java'
-
-/*
- Java plugin default project layout is 'src/main/java' and 'src/test/java'.
- Uncomment below if you instead want to use 'src' and 'tst'.
-
-sourceSets.main.java.srcDirs = ['src']
-sourceSets.test.java.srcDirs = ['tst']
-*/
-
-/*
- Applies Checkstyle plugin quality checks on project’s Java source files and
- generates reports from these checks.
-
- Remove this if you want to skip these checks and report generation.
-*/
-apply plugin: 'checkstyle'
-
-checkstyle {
-  sourceSets = [sourceSets.main]
-  ignoreFailures = false
-}
-
-/*
- Applies SpotBugs plugin quality checks on project’s Java source files and
- generates reports from these checks.
-
- Remove this if you want to skip these checks and report generation.
-*/
-apply plugin: 'com.github.spotbugs'
-
-spotbugs {
-  sourceSets = [sourceSets.main]
-  ignoreFailures = false
-}
-
-/*
- Applies JaCoCo plugin to provide code coverage metrics for Java code.
- Set minimum code coverage to fail build, where 0.01 = 1%.
-
- Remove this if you want to skip generating code coverage report.
-*/
-apply plugin: 'jacoco'
-
-check.dependsOn jacocoTestCoverageVerification
-jacocoTestCoverageVerification {
-  violationRules {
-    rule {
-      limit {
-        minimum = 0.01
-      }
+  // This isn't applying from repositories.gradle so repeating it here
+  repositories {
+    if (sandboxedBuild) {
+      maven { url offlineRepositoryRoot }
+    } else {
+      mavenCentral()
+      maven { url "https://plugins.gradle.org/m2/" }
     }
   }
+
+  dependencies {
+    classpath "${es_group}.gradle:build-tools:${es_version}"
+  }
+}
+//****************************************************************************/
+// Build configurations
+//****************************************************************************/
+
+plugins {
+    id 'java-library'
 }
 
-/*
- Resolve build and test dependencies using BrazilGradle.
-*/
+allprojects {
+    group = 'com.amazon.opendistroforelasticsearch'
+    version = "${es_version}"
+
+    apply from: 'build-tools/repositories.gradle'
+    plugins.withId('java') {
+        sourceCompatibility = targetCompatibility = "1.8"
+    }
+}
+
+apply from: 'build-tools/brazil.gradle'
+apply plugin: 'elasticsearch.esplugin'
+
+apply from: 'build-tools/prepare-offline-repo.gradle'
+
+ext {
+  projectSubstitutions = [:]
+  licenseFile = rootProject.file('LICENSE.TXT')
+  noticeFile = rootProject.file('NOTICE')
+}
+
+esplugin {
+  name 'opendistro-knn' // zip file name and plugin name in ${elasticsearch.plugin.name} read by ES when plugin loading
+  description 'Open Distro for Elasticsearch KNN'
+  classname 'org.elasticsearch.plugin.knn.KNNPlugin'
+}
+
+task release(type: Copy, group: 'build') {
+  dependsOn allprojects*.tasks.build
+  from(zipTree(project.tasks.bundlePlugin.outputs.files.getSingleFile()))
+  into "build/plugins/opendistro-knn"
+  includeEmptyDirs = false
+  // ES versions < 6.3 have a top-level elasticsearch directory inside the plugin zip which we need to remove
+  eachFile { it.path = it.path - "elasticsearch/" }
+}
+
+//****************************************************************************/
+// Dependencies
+//****************************************************************************/
 dependencies {
-  implementation brazilGradle.build()
-  testImplementation brazilGradle.testbuild()
 }
 
-/*
- Specifies that JUnit Platform (a.k.a. JUnit 5) should be used to execute tests.
+licenseFile = rootProject.file('LICENSE.txt')
+noticeFile = rootProject.file('NOTICE.txt')
 
- For mixed JUnit 4 and 5 tests, add 'JUnit-4-12-migration = 5.x;' to
- test-dependencies in Config.
-*/
+licenseHeaders.enabled = false
+dependencyLicenses.enabled = false
+thirdPartyAudit.enabled = false
+
+//****************************************************************************/
+// test configurations
+//****************************************************************************/
+
+
 test {
-  useJUnitPlatform()
+    systemProperty 'tests.security.manager', 'false'
+    systemProperty('project.root', project.rootDir.absolutePath)
 }
 
+integTestRunner {
+  distribution = es_distribution
+  // add "-Dtests.security.manager=false" to VM options if you want to run integ tests in IntelliJ
+  systemProperty 'tests.security.manager', 'false'
+
+  // Tell the test JVM if the cluster JVM is running under a debugger so that tests can use longer timeouts for
+  // requests. The 'doFirst' delays reading the debug setting on the cluster till execution time.
+  doFirst { systemProperty 'cluster.debug', integTestCluster.debug }
+
+  // The --debug-jvm command-line option makes the cluster debuggable; this makes the tests debuggable
+  if (System.getProperty("test.debug") != null) {
+    jvmArg '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
+  }
+
+  // allows integration test classes to access test resource from project root path
+  systemProperty('project.root', project.rootDir.absolutePath)
+}
+
+integTestCluster {
+  distribution = es_distribution
+}
+
+run {
+  distribution = es_distribution
+}
+
+checkstyleMain.ignoreFailures = true
+checkstyleTest.ignoreFailures = true
