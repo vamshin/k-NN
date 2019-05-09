@@ -1,34 +1,38 @@
+/*
+ *   Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License").
+ *   You may not use this file except in compliance with the License.
+ *   A copy of the License is located at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   or in the "license" file accompanying this file. This file is distributed
+ *   on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *   express or implied. See the License for the specific language governing
+ *   permissions and limitations under the License.
+ */
+
 package org.elasticsearch.index.knn;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 
-//import lombok.experimental.Delegate;
-//import lombok.RequiredArgsConstructor;
-//import lombok.NonNull;
-//import lombok.SneakyThrows;
-//import lombok.Data;
-//import lombok.EqualsAndHashCode;
-//import lombok.Getter;
-
-
-//@RequiredArgsConstructor
-//@Getter
-//@EqualsAndHashCode(callSuper=false)
+/**
+ * Class for representing the KNN query
+ */
 public class KNNQuery extends Query {
 
-    private String field;
-    private float[] queryVector;
-    private int k;
-    private Logger logger;
+    private final String field;
+    private final float[] queryVector;
+    private final int k;
 
-    public KNNQuery(String field, float[] queryVector, int k, Logger logger) {
+    public KNNQuery(String field, float[] queryVector, int k) {
         this.field = field;
         this.queryVector = queryVector;
-        this.k =  k;
-        this.logger = logger;
+        this.k = k;
     }
 
 
@@ -44,12 +48,17 @@ public class KNNQuery extends Query {
         return this.k;
     }
 
+    /**
+     * Constructs Weight implementation for this query
+     *
+     * @param searcher  searcher for given segment
+     * @param scoreMode How the produced scorers will be consumed.
+     * @param boost     The boost that is propagated by the parent queries.
+     * @return Weight   For calculating scores
+     */
     @Override
-    //@SneakyThrows
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) {
-        //System.out.println("Total docs: " + searcher.getIndexReader().maxDoc());
-        //System.out.println("Total segs: " + searcher.getIndexReader().leaves().size());
-        return new KNNWeight(this, this.logger);
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+        return new KNNWeight(this, boost);
     }
 
     @Override
@@ -65,7 +74,7 @@ public class KNNQuery extends Query {
     @Override
     public boolean equals(Object other) {
         return sameClassAs(other) &&
-            equalsTo(getClass().cast(other));
+                       equalsTo(getClass().cast(other));
     }
 
     private boolean equalsTo(KNNQuery other) {

@@ -1,3 +1,18 @@
+/*
+ *   Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License").
+ *   You may not use this file except in compliance with the License.
+ *   A copy of the License is located at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   or in the "license" file accompanying this file. This file is distributed
+ *   on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *   express or implied. See the License for the specific language governing
+ *   permissions and limitations under the License.
+ */
+
 package org.elasticsearch.index.knn;
 
 import org.apache.lucene.document.StoredField;
@@ -12,7 +27,13 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
-import org.elasticsearch.index.mapper.*;
+import org.elasticsearch.index.mapper.ArrayValueMapperParser;
+import org.elasticsearch.index.mapper.FieldMapper;
+import org.elasticsearch.index.mapper.FieldNamesFieldMapper;
+import org.elasticsearch.index.mapper.MappedFieldType;
+import org.elasticsearch.index.mapper.Mapper;
+import org.elasticsearch.index.mapper.MapperParsingException;
+import org.elasticsearch.index.mapper.ParseContext;
 import org.elasticsearch.index.query.QueryShardContext;
 import org.elasticsearch.index.query.QueryShardException;
 
@@ -25,11 +46,11 @@ import java.util.Map;
 import static org.elasticsearch.index.mapper.TypeParsers.parseField;
 
 /**
- * Field Mapper for KNN vector types.
- *
+ * Field Mapper for KNN vector type.
  */
 public class KNNVectorFieldMapper extends FieldMapper implements ArrayValueMapperParser {
     public static final String CONTENT_TYPE = "knn_vector";
+    public static final String KNN_FIELD = "knn_field";
 
     public static class Names {
         public static final String IGNORE_MALFORMED = "ignore_malformed";
@@ -45,6 +66,7 @@ public class KNNVectorFieldMapper extends FieldMapper implements ArrayValueMappe
             FIELD_TYPE.setHasDocValues(true);
             FIELD_TYPE.setDocValuesType(DocValuesType.BINARY);
             FIELD_TYPE.freeze();
+            FIELD_TYPE.putAttribute(KNN_FIELD, "true"); //This attribute helps to determine knn field type
         }
     }
 
@@ -71,30 +93,29 @@ public class KNNVectorFieldMapper extends FieldMapper implements ArrayValueMappe
             return KNNVectorFieldMapper.Defaults.IGNORE_MALFORMED;
         }
 
-
         public KNNVectorFieldMapper build(BuilderContext context, String simpleName, MappedFieldType fieldType,
                                           MappedFieldType defaultFieldType, Settings indexSettings,
                                           MultiFields multiFields, Explicit<Boolean> ignoreMalformed,
                                           CopyTo copyTo) {
             setupFieldType(context);
             return new KNNVectorFieldMapper(simpleName, fieldType, defaultFieldType, indexSettings, multiFields,
-                ignoreMalformed, copyTo);
+                    ignoreMalformed, copyTo);
         }
 
         @Override
         public KNNVectorFieldMapper build(BuilderContext context) {
             return build(context, name, fieldType, defaultFieldType, context.indexSettings(),
-                multiFieldsBuilder.build(this, context), ignoreMalformed(context), copyTo);
+                    multiFieldsBuilder.build(this, context), ignoreMalformed(context), copyTo);
         }
     }
 
     public static class TypeParser implements Mapper.TypeParser {
         @Override
-        public Mapper.Builder<?,?> parse(String name, Map<String, Object> node, ParserContext parserContext)
-            throws MapperParsingException {
+        public Mapper.Builder<?, ?> parse(String name, Map<String, Object> node, ParserContext parserContext)
+                throws MapperParsingException {
             Builder builder = new KNNVectorFieldMapper.Builder(name);
             parseField(builder, name, node, parserContext);
-            for (Iterator<Map.Entry<String, Object>> iterator = node.entrySet().iterator(); iterator.hasNext();) {
+            for (Iterator<Map.Entry<String, Object>> iterator = node.entrySet().iterator(); iterator.hasNext(); ) {
                 Map.Entry<String, Object> entry = iterator.next();
                 String propName = entry.getKey();
                 Object propNode = entry.getValue();
@@ -153,7 +174,7 @@ public class KNNVectorFieldMapper extends FieldMapper implements ArrayValueMappe
         @Override
         public Query termQuery(Object value, QueryShardContext context) {
             throw new QueryShardException(context, "KNN vector do not support exact searching, use KNN queries instead: ["
-                + name() + "]");
+                                                           + name() + "]");
         }
     }
 
@@ -192,7 +213,6 @@ public class KNNVectorFieldMapper extends FieldMapper implements ArrayValueMappe
             context.doc().add(new StoredField(name(), point.toString()));
         }
         context.path().remove();
-       // return null;
     }
 
     @Override

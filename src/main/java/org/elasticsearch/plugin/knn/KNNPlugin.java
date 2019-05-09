@@ -1,27 +1,19 @@
 /*
- * Licensed to Elasticsearch under one or more contributor
- * license agreements. See the NOTICE file distributed with
- * this work for additional information regarding copyright
- * ownership. Elasticsearch licenses this file to you under
- * the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *   Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   Licensed under the Apache License, Version 2.0 (the "License").
+ *   You may not use this file except in compliance with the License.
+ *   A copy of the License is located at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   or in the "license" file accompanying this file. This file is distributed
+ *   on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *   express or implied. See the License for the specific language governing
+ *   permissions and limitations under the License.
  */
 
 package org.elasticsearch.plugin.knn;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 import org.elasticsearch.index.knn.KNNQueryBuilder;
 import org.elasticsearch.index.knn.KNNVectorFieldMapper;
@@ -30,8 +22,25 @@ import org.elasticsearch.plugins.MapperPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.plugins.SearchPlugin;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 import static java.util.Collections.singletonList;
 
+/**
+ * Entry point for the KNN plugin where we define mapper for knn_vector type
+ * and new query clause "knn"
+ *
+ * Example Query
+ *
+ *   "knn": {
+ *    "my_vector": {
+ *      "vector": [3, 4],
+ *      "k": 3
+ *    }
+ *   }
+ */
 public class KNNPlugin extends Plugin implements MapperPlugin, SearchPlugin {
 
     @Override

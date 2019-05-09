@@ -1,45 +1,42 @@
 /*
- * Licensed to Elasticsearch under one or more contributor
- * license agreements. See the NOTICE file distributed with
- * this work for additional information regarding copyright
- * ownership. Elasticsearch licenses this file to you under
- * the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *   Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *   Licensed under the Apache License, Version 2.0 (the "License").
+ *   You may not use this file except in compliance with the License.
+ *   A copy of the License is located at
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   or in the "license" file accompanying this file. This file is distributed
+ *   on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *   express or implied. See the License for the specific language governing
+ *   permissions and limitations under the License.
  */
 
 package org.elasticsearch.index.knn;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.search.Query;
 import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.ParsingException;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.QueryShardContext;
-
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * KNN query is a query that search for the approximate K-nearest neighbors
+ * Helper class to build the KNN query
  */
 public class KNNQueryBuilder extends AbstractQueryBuilder<KNNQueryBuilder> {
+    private static Logger logger = LogManager.getLogger(KNNQueryBuilder.class);
     public static final ParseField VECTOR_FIELD = new ParseField("vector");
     public static final ParseField K_FIELD = new ParseField("k");
     /**
@@ -49,22 +46,25 @@ public class KNNQueryBuilder extends AbstractQueryBuilder<KNNQueryBuilder> {
     /**
      * The default mode terms are combined in a match query
      */
-    public static Logger logger = Loggers.getLogger(KNNQueryBuilder.class);
     private final String fieldName;
     private final float[] vector;
     private int k = 0;
 
     /**
-     * Constructs a new match query.
+     * Constructs a new knn query
+     *
+     * @param fieldName Name of the filed
+     * @param vector    Array of floating points
+     * @param k         K nearest neighbours for the given vector
      */
     public KNNQueryBuilder(String fieldName, float[] vector, int k) {
-        if (fieldName == null) {
+        if (Strings.isNullOrEmpty(fieldName)) {
             throw new IllegalArgumentException("[" + NAME + "] requires fieldName");
         }
         if (vector == null) {
             throw new IllegalArgumentException("[" + NAME + "] requires query vector");
         }
-        if (k == 0) {
+        if (k <= 0) {
             throw new IllegalArgumentException("[" + NAME + "] requires k > 0");
         }
         this.fieldName = fieldName;
@@ -72,8 +72,17 @@ public class KNNQueryBuilder extends AbstractQueryBuilder<KNNQueryBuilder> {
         this.k = k;
     }
 
+    private static float[] ObjectsToFloats(List<Object> objs) {
+        float[] vec = new float[objs.size()];
+        for (int i = 0; i < objs.size(); i++) {
+            vec[i] = ((Number) objs.get(i)).floatValue();
+        }
+        return vec;
+    }
+
     /**
-     * Read from a stream.
+     * @param in Reads from stream
+     * @throws IOException Throws IO Exception
      */
     public KNNQueryBuilder(StreamInput in) throws IOException {
         super(in);
@@ -82,16 +91,7 @@ public class KNNQueryBuilder extends AbstractQueryBuilder<KNNQueryBuilder> {
         k = in.readInt();
     }
 
-    static private float[] ObjectsToFloats(List<Object> objs) {
-        float[] vec = new float[objs.size()];
-        for (int i = 0; i < objs.size(); i++) {
-            vec[i] = ((Number)objs.get(i)).floatValue();
-        }
-        return vec;
-    }
-
     public static KNNQueryBuilder fromXContent(XContentParser parser) throws IOException {
-        //logger.info("fromXContent");
         String fieldName = null;
         List<Object> vector = null;
         float boost = AbstractQueryBuilder.DEFAULT_BOOST;
@@ -119,11 +119,11 @@ public class KNNQueryBuilder extends AbstractQueryBuilder<KNNQueryBuilder> {
                             queryName = parser.text();
                         } else {
                             throw new ParsingException(parser.getTokenLocation(),
-                                "[" + NAME + "] query does not support [" + currentFieldName + "]");
+                                    "[" + NAME + "] query does not support [" + currentFieldName + "]");
                         }
                     } else {
                         throw new ParsingException(parser.getTokenLocation(),
-                            "[" + NAME + "] unknown token [" + token + "] after [" + currentFieldName + "]");
+                                "[" + NAME + "] unknown token [" + token + "] after [" + currentFieldName + "]");
                     }
                 }
             } else {
@@ -132,17 +132,6 @@ public class KNNQueryBuilder extends AbstractQueryBuilder<KNNQueryBuilder> {
                 vector = parser.list();
             }
         }
-
-        if (vector == null) {
-            throw new ParsingException(parser.getTokenLocation(), "No vector specified for knn query");
-        }
-        if (k == 0) {
-            throw new ParsingException(parser.getTokenLocation(), "k in knn query should be positive integer");
-        }
-        //logger.info("vector = " + vector.toString());
-        //logger.info("k = " + String.valueOf(k));
-        //System.out.println("vector = " + vector.toString());
-        //System.out.println("k = " + String.valueOf(k));
 
         KNNQueryBuilder knnQuery = new KNNQueryBuilder(fieldName, ObjectsToFloats(vector), k);
         knnQuery.queryName(queryName);
@@ -158,14 +147,14 @@ public class KNNQueryBuilder extends AbstractQueryBuilder<KNNQueryBuilder> {
     }
 
     /**
-     * Returns the field name used in this query.
+     * @return The field name used in this query
      */
     public String fieldName() {
         return this.fieldName;
     }
 
     /**
-     * Returns the value used in this query.
+     * @return Returns the vector used in this query.
      */
     public Object vector() {
         return this.vector;
@@ -183,20 +172,16 @@ public class KNNQueryBuilder extends AbstractQueryBuilder<KNNQueryBuilder> {
         builder.endObject();
     }
 
-
     @Override
     protected Query doToQuery(QueryShardContext context) throws IOException {
-        Query query = null;
-        //query = new KNNQuery(this.fieldName, vector, k);
-        query = new KNNQuery(this.fieldName, vector, k, logger);
-        return query;
+        return new KNNQuery(this.fieldName, vector, k);
     }
 
     @Override
     protected boolean doEquals(KNNQueryBuilder other) {
         return Objects.equals(fieldName, other.fieldName) &&
-            Objects.equals(vector, other.vector) &&
-            Objects.equals(k, other.k);
+                       Objects.equals(vector, other.vector) &&
+                       Objects.equals(k, other.k);
     }
 
     @Override

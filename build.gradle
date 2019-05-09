@@ -14,31 +14,33 @@
  */
 
 buildscript {
-  ext {
-    es_version = project.property("es.version")
-    es_group = "org.elasticsearch"
-    offlineRepositoryRoot = rootProject.file("${rootDir.parentFile}/offline-repo").absolutePath
-    es_distribution = 'oss-zip'
-    distribution = es_distribution
-  }
+    ext {
+        es_version = project.property("es.version")
+        es_group = "org.elasticsearch"
+        offlineRepositoryRoot = rootProject.file("${rootDir.parentFile}/offline-repo").absolutePath
+        es_distribution = 'oss-zip'
+        distribution = es_distribution
+    }
 
     apply from: 'build-tools/amazon-sandbox.gradle'
     apply from: 'build-tools/repositories.gradle'
 
-  // This isn't applying from repositories.gradle so repeating it here
-  repositories {
-    if (sandboxedBuild) {
-      maven { url offlineRepositoryRoot }
-    } else {
-      mavenCentral()
-      maven { url "https://plugins.gradle.org/m2/" }
+    // This isn't applying from repositories.gradle so repeating it here
+    repositories {
+        if (sandboxedBuild) {
+            maven { url offlineRepositoryRoot }
+        } else {
+            mavenCentral()
+            maven { url "https://plugins.gradle.org/m2/" }
+        }
     }
-  }
 
-  dependencies {
-    classpath "${es_group}.gradle:build-tools:${es_version}"
-  }
+    dependencies {
+        classpath "${es_group}.gradle:build-tools:${es_version}"
+        logger.warn("Vamshi..... .... ES version  .. ${es_version}")
+    }
 }
+
 //****************************************************************************/
 // Build configurations
 //****************************************************************************/
@@ -67,35 +69,38 @@ apply plugin: 'elasticsearch.esplugin'
 apply from: 'build-tools/prepare-offline-repo.gradle'
 
 ext {
-  projectSubstitutions = [:]
-  licenseFile = rootProject.file('LICENSE.TXT')
-  noticeFile = rootProject.file('NOTICE')
+    projectSubstitutions = [:]
 }
 
 esplugin {
-  name 'opendistro-knn' // zip file name and plugin name in ${elasticsearch.plugin.name} read by ES when plugin loading
-  description 'Open Distro for Elasticsearch KNN'
-  classname 'org.elasticsearch.plugin.knn.KNNPlugin'
+    name 'opendistro-knn'
+    // zip file name and plugin name in ${elasticsearch.plugin.name} read by ES when plugin loading
+    description 'Open Distro for Elasticsearch KNN'
+    classname 'org.elasticsearch.plugin.knn.KNNPlugin'
+    licenseFile = rootProject.file('LICENSE.txt')
+    noticeFile = rootProject.file('NOTICE.txt')
+
 }
 
 task dummy {
-  logger.warn("Vamshi..... ${project.sourceSets}")
+    logger.warn("Vamshi..... ${project.sourceSets} .... ES version  .. ${es_version}")
 }
 
 task release(type: Copy, group: 'build') {
-  dependsOn allprojects*.tasks.build
-  from(zipTree(project.tasks.bundlePlugin.outputs.files.getSingleFile()))
-  into "build/plugins/opendistro-knn"
-  includeEmptyDirs = false
-  // ES versions < 6.3 have a top-level elasticsearch directory inside the plugin zip which we need to remove
-  eachFile { it.path = it.path - "elasticsearch/" }
+    dependsOn allprojects*.tasks.build
+    from(zipTree(project.tasks.bundlePlugin.outputs.files.getSingleFile()))
+    into "build/plugins/opendistro-knn"
+    includeEmptyDirs = false
+    // ES versions < 6.3 have a top-level elasticsearch directory inside the plugin zip which we need to remove
+    eachFile { it.path = it.path - "elasticsearch/" }
 }
 
 //****************************************************************************/
 // Dependencies
 //****************************************************************************/
 dependencies {
-  compileOnly "org.elasticsearch:elasticsearch:${es_version}"
+    compileOnly "org.elasticsearch:elasticsearch:${es_version}"
+    testImplementation "org.elasticsearch.test:framework:${es_version}"
 }
 
 licenseFile = rootProject.file('LICENSE.txt')
@@ -105,43 +110,46 @@ licenseHeaders.enabled = false
 dependencyLicenses.enabled = false
 thirdPartyAudit.enabled = false
 
-
-//****************************************************************************/
-// test configurations
-//****************************************************************************/
+def es_tmp_dir = rootProject.file('build/private/es_tmp').absoluteFile
+es_tmp_dir.mkdirs()
 
 
-test {
+integTestRunner {
     systemProperty 'tests.security.manager', 'false'
+    systemProperty 'java.io.tmpdir', es_tmp_dir.absolutePath
+    distribution = es_distribution
+
+    // Tell the test JVM if the cluster JVM is running under a debugger so that tests can use longer timeouts for
+    // requests. The 'doFirst' delays reading the debug setting on the cluster till execution time.
+    doFirst { systemProperty 'cluster.debug', integTestCluster.debug }
+
+    // The --debug-jvm command-line option makes the cluster debuggable; this makes the tests debuggable
+    if (System.getProperty("test.debug") != null) {
+        jvmArg '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
+    }
+
+    systemProperty "java.library.path", "$rootDir/buildSrc"
+    // allows integration test classes to access test resource from project root path
     systemProperty('project.root', project.rootDir.absolutePath)
 }
 
-integTestRunner {
-  distribution = es_distribution
-  // add "-Dtests.security.manager=false" to VM options if you want to run integ tests in IntelliJ
-  systemProperty 'tests.security.manager', 'false'
-
-  // Tell the test JVM if the cluster JVM is running under a debugger so that tests can use longer timeouts for
-  // requests. The 'doFirst' delays reading the debug setting on the cluster till execution time.
-  doFirst { systemProperty 'cluster.debug', integTestCluster.debug }
-
-  // The --debug-jvm command-line option makes the cluster debuggable; this makes the tests debuggable
-  if (System.getProperty("test.debug") != null) {
-    jvmArg '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
-  }
-
-  // allows integration test classes to access test resource from project root path
-  systemProperty('project.root', project.rootDir.absolutePath)
-}
-
 integTestCluster {
-  distribution = es_distribution
+    distribution = es_distribution
+    systemProperty "java.library.path", "$rootDir/buildSrc"
 }
 
 run {
-  distribution = es_distribution
-  systemProperty "java.library.path", "$rootDir/buildSrc"
+    distribution = es_distribution
+    systemProperty "java.library.path", "$rootDir/buildSrc"
 }
 
-checkstyleMain.ignoreFailures = true
+//TODO fix these
 checkstyleTest.ignoreFailures = true
+forbiddenApis.ignoreFailures = true
+
+// We don't need to follow ES testing naming conventions.
+// see https://github.com/elastic/elasticsearch/blob/323f312bbc829a63056a79ebe45adced5099f6e6/buildSrc/src/main/java/org/elasticsearch/gradle/precommit/TestingConventionsTasks.java
+// enable testingConventions check will cause errors like:  "Classes ending with [Tests] must subclass [LuceneTestCase]"
+testingConventions.enabled = false
+
+

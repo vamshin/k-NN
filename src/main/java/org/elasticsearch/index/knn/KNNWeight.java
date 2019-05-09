@@ -1,7 +1,24 @@
+/*
+ *   Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License").
+ *   You may not use this file except in compliance with the License.
+ *   A copy of the License is located at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   or in the "license" file accompanying this file. This file is distributed
+ *   on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *   express or implied. See the License for the specific language governing
+ *   permissions and limitations under the License.
+ */
+
 package org.elasticsearch.index.knn;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Scorer;
@@ -9,26 +26,29 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.elasticsearch.SpecialPermission;
+import org.elasticsearch.common.io.PathUtils;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+/**
+ * Calculate query weights and build query scorers.
+ */
 public class KNNWeight extends Weight {
 
     private final KNNQuery knnQuery;
-    private final Logger logger;
+    private final float boost;
 
-    public KNNWeight(KNNQuery query, Logger logger) {
+    public KNNWeight(KNNQuery query, float boost) {
         super(query);
         this.knnQuery = query;
-        this.logger = logger;
+        this.boost = boost;
     }
 
     @Override
@@ -41,48 +61,33 @@ public class KNNWeight extends Weight {
     }
 
     @Override
-    //@SneakyThrows
     public Scorer scorer(LeafReaderContext context) {
         try {
             SegmentReader reader = (SegmentReader) FilterLeafReader.unwrap(context.reader());
             String directory = ((FSDirectory) FilterDirectory.unwrap(reader.directory())).getDirectory().toString();
-            Path indexPath = Paths.get(directory, String.format("%s.hnsw", reader.getSegmentName()));
-
-            //values needs to be passed to NMS due to a bug
-            BinaryDocValues values = context.reader().getBinaryDocValues(knnQuery.getField());
-           // KNNCodec.Pair vectors = KNNCodec.getFloats(values);
-           // KNNIndex index = KNNIndex.loadIndex3(vectors.vectors, indexPath.toString());
-            SecurityManager sm = System.getSecurityManager();
-            if (sm != null) {
-                // unprivileged code such as scripts do not have SpecialPermission
-                sm.checkPermission(new SpecialPermission());
-            }
+            Path indexPath = PathUtils.get(directory, String.format("%s.hnsw", reader.getSegmentName()));
 
             KNNQueryResult[] results = AccessController.doPrivileged(
-                new PrivilegedAction<KNNQueryResult[]>() {
-                    public KNNQueryResult[] run() {
-                        KNNIndex index = KNNIndex.loadIndex(indexPath.toString());
-                        return index.queryIndex(knnQuery.getQueryVector(), knnQuery.getK());
+                    new PrivilegedAction<KNNQueryResult[]>() {
+                        public KNNQueryResult[] run() {
+                            KNNIndex index = KNNIndex.loadIndex(indexPath.toString());
+                            return index.queryIndex(knnQuery.getQueryVector(), knnQuery.getK());
+                        }
                     }
-                }
             );
 
-            Map<Integer, Float> scores = new HashMap<>();
-            for (int i = 0; i < results.length; i++) {
-                KNNQueryResult result = results[i];
-                scores.put((Integer)result.getId(), result.getScore());
-            }
+            Map<Integer, Float> scores = Arrays.stream(results).collect(
+                    Collectors.toMap(result -> result.getId(), result -> result.getScore()));
 
             int maxDoc = Collections.max(scores.keySet()) + 1;
             DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(maxDoc);
             DocIdSetBuilder.BulkAdder setAdder = docIdSetBuilder.grow(maxDoc);
-            for (int i = 0; i < results.length; i++) {
-                setAdder.add(results[i].getId());
-                //logger.warn("DocID {}", results[i].getId());
-            }
+
+            Arrays.stream(results).forEach(result -> setAdder.add(result.getId()));
+
             DocIdSetIterator docIdSetIter = docIdSetBuilder.build().iterator();
-            return new KNNScorer(docIdSetIter, scores);
-        } catch(Exception e) {
+            return new KNNScorer(this, docIdSetIter, scores, boost);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

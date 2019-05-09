@@ -13,25 +13,30 @@
  *   permissions and limitations under the License.
  */
 
-package org.elasticsearch.index.knn;
+package org.elasticsearch.index.knn.codec;
 
-/**
- * Place holder for the score of the document
- */
-public class KNNQueryResult {
-    public KNNQueryResult(int id, float score) {
-        this.id = id;
-        this.score = score;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocIDMerger;
+import org.apache.lucene.index.MergeState;
+
+import java.io.IOException;
+
+class BinaryDocValuesSub extends DocIDMerger.Sub {
+
+    private final BinaryDocValues values;
+
+    public BinaryDocValues getValues() {
+        return values;
     }
 
-    private int id;
-    private float score;
-
-    public int getId() {
-        return this.id;
+    BinaryDocValuesSub(MergeState.DocMap docMap, BinaryDocValues values) {
+        super(docMap);
+        assert values != null;
+        this.values = values;
     }
 
-    public float getScore() {
-        return this.score;
+    @Override
+    public int nextDoc() throws IOException {
+        return values.nextDoc();
     }
 }
