@@ -26,7 +26,6 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
-import org.elasticsearch.SpecialPermission;
 import org.elasticsearch.index.knn.KNNIndex;
 import org.elasticsearch.index.knn.KNNVectorFieldMapper;
 
@@ -55,17 +54,12 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
     public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
         delegatee.addBinaryField(field, valuesProducer);
 
-        //TODO can we span a thread here. So that it does not block I/O
+        //TODO Non blocking I/O https://issues.amazon.com/issues/CloudSearch-8557
         if (field.attributes().containsKey(KNNVectorFieldMapper.KNN_FIELD)) {
             BinaryDocValues values = valuesProducer.getBinary(field);
             String indexPath = Paths.get(((FSDirectory) (FilterDirectory.unwrap(state.directory))).getDirectory().toString(),
                     String.format("%s.hnsw", state.segmentInfo.name)).toString();
             KNNCodec.Pair pair = KNNCodec.getFloats(values);
-            SecurityManager sm = System.getSecurityManager();
-            if (sm != null) {
-                // unprivileged code such as scripts do not have SpecialPermission
-                sm.checkPermission(new SpecialPermission());
-            }
             AccessController.doPrivileged(
                     new PrivilegedAction<Void>() {
                         public Void run() {
@@ -98,7 +92,6 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
             throw new RuntimeException(e);
         }
     }
-
 
     @Override
     public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {

@@ -64,8 +64,6 @@ public class KNNIndex {
         return loadedIndex;
     }
 
-    public native void init2(float[][] data, String indexPath);
-
     public native void init(String indexPath);
 
     public native void gc();

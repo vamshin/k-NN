@@ -35,7 +35,6 @@ public class KNNQuery extends Query {
         this.k = k;
     }
 
-
     public String getField() {
         return this.field;
     }

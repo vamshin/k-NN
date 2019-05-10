@@ -52,6 +52,15 @@ public class KNNVectorFieldMapper extends FieldMapper implements ArrayValueMappe
     public static final String CONTENT_TYPE = "knn_vector";
     public static final String KNN_FIELD = "knn_field";
 
+    protected Explicit<Boolean> ignoreMalformed;
+
+    public KNNVectorFieldMapper(String simpleName, MappedFieldType fieldType, MappedFieldType defaultFieldType,
+                                Settings indexSettings, MultiFields multiFields, Explicit<Boolean> ignoreMalformed,
+                                CopyTo copyTo) {
+        super(simpleName, fieldType, defaultFieldType, indexSettings, multiFields, copyTo);
+        this.ignoreMalformed = ignoreMalformed;
+    }
+
     public static class Names {
         public static final String IGNORE_MALFORMED = "ignore_malformed";
     }
@@ -65,8 +74,8 @@ public class KNNVectorFieldMapper extends FieldMapper implements ArrayValueMappe
             FIELD_TYPE.setIndexOptions(IndexOptions.NONE);
             FIELD_TYPE.setHasDocValues(true);
             FIELD_TYPE.setDocValuesType(DocValuesType.BINARY);
-            FIELD_TYPE.freeze();
             FIELD_TYPE.putAttribute(KNN_FIELD, "true"); //This attribute helps to determine knn field type
+            FIELD_TYPE.freeze();
         }
     }
 
@@ -129,15 +138,6 @@ public class KNNVectorFieldMapper extends FieldMapper implements ArrayValueMappe
         }
     }
 
-    protected Explicit<Boolean> ignoreMalformed;
-
-    public KNNVectorFieldMapper(String simpleName, MappedFieldType fieldType, MappedFieldType defaultFieldType,
-                                Settings indexSettings, MultiFields multiFields, Explicit<Boolean> ignoreMalformed,
-                                CopyTo copyTo) {
-        super(simpleName, fieldType, defaultFieldType, indexSettings, multiFields, copyTo);
-        this.ignoreMalformed = ignoreMalformed;
-    }
-
     @Override
     protected String contentType() {
         return CONTENT_TYPE;
@@ -181,32 +181,27 @@ public class KNNVectorFieldMapper extends FieldMapper implements ArrayValueMappe
     @Override
     public void parse(ParseContext context) throws IOException {
         context.path().add(simpleName());
-        VectorField point;
-        Float f = context.parseExternalValue(Float.class);
 
-        if (f == null) {
-            ArrayList<Float> vector = new ArrayList<>();
-            XContentParser.Token token = context.parser().currentToken();
+        ArrayList<Float> vector = new ArrayList<>();
+        XContentParser.Token token = context.parser().currentToken();
 
-            if (token == XContentParser.Token.START_ARRAY) {
-                token = context.parser().nextToken();
-                while (token != XContentParser.Token.END_ARRAY) {
-                    vector.add(context.parser().floatValue());
-                    token = context.parser().nextToken();
-                }
-            } else if (token == XContentParser.Token.VALUE_NUMBER) {
+        if (token == XContentParser.Token.START_ARRAY) {
+            token = context.parser().nextToken();
+            while (token != XContentParser.Token.END_ARRAY) {
                 vector.add(context.parser().floatValue());
                 token = context.parser().nextToken();
             }
-            float[] array = new float[vector.size()];
-            for (int i = 0; i < vector.size(); i++) {
-                array[i] = vector.get(i);
-            }
-            point = new VectorField(name(), array, fieldType());
-        } else {
-            float[] array = {f};
-            point = new VectorField(name(), array, fieldType());
+        } else if (token == XContentParser.Token.VALUE_NUMBER) {
+            vector.add(context.parser().floatValue());
+            context.parser().nextToken();
         }
+
+        float[] array = new float[vector.size()];
+        int i = 0;
+        for (Float f : vector) {
+            array[i++] = f;
+        }
+        VectorField point = new VectorField(name(), array, fieldType());
 
         context.doc().add(point);
         if (fieldType().stored()) {

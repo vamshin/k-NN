@@ -19,13 +19,13 @@ package org.elasticsearch.index.knn;
  * Place holder for the score of the document
  */
 public class KNNQueryResult {
-    public KNNQueryResult(int id, float score) {
+    private final int id;
+    private final float score;
+
+    public KNNQueryResult(final int id, final float score) {
         this.id = id;
         this.score = score;
     }
-
-    private int id;
-    private float score;
 
     public int getId() {
         return this.id;
