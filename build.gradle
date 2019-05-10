@@ -37,7 +37,6 @@ buildscript {
 
     dependencies {
         classpath "${es_group}.gradle:build-tools:${es_version}"
-        logger.warn("Vamshi..... .... ES version  .. ${es_version}")
     }
 }
 
@@ -80,10 +79,6 @@ esplugin {
     licenseFile = rootProject.file('LICENSE.txt')
     noticeFile = rootProject.file('NOTICE.txt')
 
-}
-
-task dummy {
-    logger.warn("Vamshi..... ${project.sourceSets} .... ES version  .. ${es_version}")
 }
 
 task release(type: Copy, group: 'build') {
