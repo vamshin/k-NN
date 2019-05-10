@@ -53,7 +53,7 @@ public class KNNWeight extends Weight {
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) {
-        return Explanation.match(101, "No explanation");
+        return Explanation.match(1.0f, "No Explanation");
     }
 
     @Override
