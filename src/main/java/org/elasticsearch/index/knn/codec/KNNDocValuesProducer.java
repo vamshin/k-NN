@@ -37,6 +37,7 @@ class KNNDocValuesProducer extends EmptyDocValuesProducer {
 
     @Override
     public BinaryDocValues getBinary(FieldInfo field) {
+        List<String> segmentToDelete = new ArrayList<>();
         try {
             List<BinaryDocValuesSub> subs = new ArrayList<>(this.mergeState.docValuesProducers.length);
             for (int i = 0; i < this.mergeState.docValuesProducers.length; i++) {

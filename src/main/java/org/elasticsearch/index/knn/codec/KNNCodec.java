@@ -48,22 +48,24 @@ public final class KNNCodec extends Codec {
 
     private final DocValuesFormat docValuesFormat;
     private final DocValuesFormat perFieldDocValuesFormat;
+    private final CompoundFormat compoundFormat;
 
     public KNNCodec() {
         super(KNN_CODEC);
-        docValuesFormat = new KNNDocValuesFormat();
-        perFieldDocValuesFormat = new PerFieldDocValuesFormat() {
+        this.docValuesFormat = new KNNDocValuesFormat();
+        this.perFieldDocValuesFormat = new PerFieldDocValuesFormat() {
             @Override
             public DocValuesFormat getDocValuesFormatForField(String field) {
                 return docValuesFormat;
             }
         };
+        this.compoundFormat = new KNNCompoundFormat();
     }
 
     /*
      * This function handles the latest Codec supported by current ES version.
      */
-    private Codec getDelegatee() {
+    public Codec getDelegatee() {
         return Codec.getDefault();
     }
 
@@ -115,7 +117,7 @@ public final class KNNCodec extends Codec {
 
     @Override
     public CompoundFormat compoundFormat() {
-        return getDelegatee().compoundFormat();
+        return this.compoundFormat;
     }
 
     @Override

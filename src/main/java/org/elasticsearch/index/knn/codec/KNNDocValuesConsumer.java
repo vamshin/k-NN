@@ -22,10 +22,12 @@ import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.IndexOutput;
 import org.elasticsearch.index.knn.KNNIndex;
 import org.elasticsearch.index.knn.KNNVectorFieldMapper;
 
@@ -59,6 +61,14 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
             BinaryDocValues values = valuesProducer.getBinary(field);
             String indexPath = Paths.get(((FSDirectory) (FilterDirectory.unwrap(state.directory))).getDirectory().toString(),
                     String.format("%s.hnsw", state.segmentInfo.name)).toString();
+
+            /**
+             * Touch the file so that this gets lifecycle for free
+             */
+            IndexOutput data;
+            data = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, "", "hnsw"), state.context);
+            data.close();
+
             KNNCodec.Pair pair = KNNCodec.getFloats(values);
             AccessController.doPrivileged(
                     new PrivilegedAction<Void>() {
@@ -115,6 +125,7 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
 
     @Override
     public void close() throws IOException {
+
         delegatee.close();
     }
 }

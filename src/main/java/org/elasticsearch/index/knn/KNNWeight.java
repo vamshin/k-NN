@@ -28,6 +28,7 @@ import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.elasticsearch.common.io.PathUtils;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -61,11 +62,16 @@ public class KNNWeight extends Weight {
     }
 
     @Override
-    public Scorer scorer(LeafReaderContext context) {
+    public Scorer scorer(LeafReaderContext context) throws IOException {
         try {
             SegmentReader reader = (SegmentReader) FilterLeafReader.unwrap(context.reader());
             String directory = ((FSDirectory) FilterDirectory.unwrap(reader.directory())).getDirectory().toString();
-            Path indexPath = PathUtils.get(directory, String.format("%s.hnsw", reader.getSegmentName()));
+
+            /**
+             * In case of compound file, extension would be .hnswc otherwise .hnsw
+             */
+            String hnswFileExtension = reader.getSegmentInfo().info.getUseCompoundFile() ? ".hnswc" : ".hnsw";
+            Path indexPath = PathUtils.get(directory, String.format("%s%s", reader.getSegmentName(), hnswFileExtension));
 
             KNNQueryResult[] results = AccessController.doPrivileged(
                     new PrivilegedAction<KNNQueryResult[]>() {
@@ -88,7 +94,7 @@ public class KNNWeight extends Weight {
             DocIdSetIterator docIdSetIter = docIdSetBuilder.build().iterator();
             return new KNNScorer(this, docIdSetIter, scores, boost);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new IOException(e);
         }
     }
 
