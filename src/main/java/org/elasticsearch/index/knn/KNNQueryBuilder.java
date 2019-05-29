@@ -64,9 +64,13 @@ public class KNNQueryBuilder extends AbstractQueryBuilder<KNNQueryBuilder> {
         if (vector == null) {
             throw new IllegalArgumentException("[" + NAME + "] requires query vector");
         }
+        if (vector.length == 0) {
+            throw new IllegalArgumentException("[" + NAME + "] query vector is empty");
+        }
         if (k <= 0) {
             throw new IllegalArgumentException("[" + NAME + "] requires k > 0");
         }
+
         this.fieldName = fieldName;
         this.vector = vector;
         this.k = k;
@@ -158,6 +162,10 @@ public class KNNQueryBuilder extends AbstractQueryBuilder<KNNQueryBuilder> {
      */
     public Object vector() {
         return this.vector;
+    }
+
+    public int getK() {
+        return this.k;
     }
 
     @Override

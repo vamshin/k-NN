@@ -51,7 +51,7 @@ public class KNNIndex {
      * Loads the knn index to memory for querying the neighbours
      *
      * @param indexPath path where the hnsw index is stored
-     * @return knn index that can be querried for k nearest neighbours
+     * @return knn index that can be queried for k nearest neighbours
      */
     public static KNNIndex loadIndex(String indexPath) {
         KNNIndex loadedIndex = loadedIndices.get(indexPath);

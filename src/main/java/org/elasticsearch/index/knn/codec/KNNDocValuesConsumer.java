@@ -54,7 +54,6 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
     public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
         delegatee.addBinaryField(field, valuesProducer);
 
-        //TODO Non blocking I/O https://issues.amazon.com/issues/CloudSearch-8557
         if (field.attributes().containsKey(KNNVectorFieldMapper.KNN_FIELD)) {
             BinaryDocValues values = valuesProducer.getBinary(field);
             String indexPath = Paths.get(((FSDirectory) (FilterDirectory.unwrap(state.directory))).getDirectory().toString(),

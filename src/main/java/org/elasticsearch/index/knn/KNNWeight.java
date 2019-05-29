@@ -81,6 +81,7 @@ public class KNNWeight extends Weight {
 
             int maxDoc = Collections.max(scores.keySet()) + 1;
             DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(maxDoc);
+
             DocIdSetBuilder.BulkAdder setAdder = docIdSetBuilder.grow(maxDoc);
 
             Arrays.stream(results).forEach(result -> setAdder.add(result.getId()));
