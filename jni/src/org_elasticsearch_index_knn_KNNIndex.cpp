@@ -1,8 +1,6 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include <iostream>
-#include <fstream>
 #include "org_elasticsearch_index_knn_KNNIndex.h"
 
 #include "init.h"
@@ -42,10 +40,6 @@ JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_KNNIndex_saveIndex(JNIEn
 
     initLibrary();
 
-  ofstream myfile;
-  myfile.open ("/tmp/example.txt");
-  myfile << "Writing this to a file.\n";
-
     Space<float> *space = SpaceFactoryRegistry<float>::Instance().CreateSpace("l2", AnyParams());
 
     ObjectVector dataset;
@@ -53,13 +47,7 @@ JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_KNNIndex_saveIndex(JNIEn
     for (int i = 0; i < env->GetArrayLength(vectors); i++) {
         jfloatArray vectorArray = (jfloatArray)env->GetObjectArrayElement(vectors, i);
         float *vector = env->GetFloatArrayElements(vectorArray, 0);
-        int arrlen = env->GetArrayLength(vectorArray);
-        cout << "VAMSHI... size of : " << sizeof(vector) << "REsult:" << arrlen;
-        myfile << "VAMSHI... size of : ";
-        myfile << sizeof(vector);
-        myfile << "Hurray : ";
-        myfile << arrlen; 
-        dataset.push_back(new Object(object_ids[i], -1, arrlen*sizeof(float), vector));
+        dataset.push_back(new Object(object_ids[i], -1, sizeof(vector), vector));
         env->ReleaseFloatArrayElements(vectorArray, vector, 0);
     }
     
@@ -67,9 +55,8 @@ JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_KNNIndex_saveIndex(JNIEn
 
     index->CreateIndex(AnyParams());
     //index->CreateIndex(AnyParams({"M=100", "efConstruction=256"}));
-    myfile << "\nVAMSHI....Indexed dataset size: ";
-    myfile << index->GetSize();
-    myfile.close();
+    //cout << "Indexed dataset size: " << index->GetSize() << endl;
+
     index->SaveIndex(env->GetStringUTFChars(indexPath, NULL));
 }
 
@@ -81,9 +68,8 @@ JNIEXPORT jobjectArray JNICALL Java_org_elasticsearch_index_knn_KNNIndex_queryIn
     //cout << "Loaded dataset size: " << index->GetSize() << endl;
 
     float* vector = env->GetFloatArrayElements(queryVector, 0);
-    int arrlen = env->GetArrayLength(queryVector);
     Space<float>* space = SpaceFactoryRegistry<float>::Instance().CreateSpace("l2", AnyParams());
-    KNNQuery<float> query (*space, new Object(-1, -1, arrlen*sizeof(float), vector), k);
+    KNNQuery<float> query (*space, new Object(-1, -1, sizeof(vector), vector), k);
     env->ReleaseFloatArrayElements(queryVector, vector, 0);
 
     index->SetQueryTimeParams(AnyParams({"ef=512"}));
