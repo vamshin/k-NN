@@ -25,14 +25,6 @@ JNIEXPORT jobjectArray JNICALL Java_org_elasticsearch_index_knn_KNNIndex_queryIn
 
 /*
  * Class:     org_elasticsearch_index_knn_KNNIndex
- * Method:    init2
- * Signature: ([[FLjava/lang/String;)V
- */
-JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_KNNIndex_init2
-  (JNIEnv *, jobject, jobjectArray, jstring);
-
-/*
- * Class:     org_elasticsearch_index_knn_KNNIndex
  * Method:    init
  * Signature: (Ljava/lang/String;)V
  */

@@ -74,13 +74,8 @@ JNIEXPORT jobjectArray JNICALL Java_org_elasticsearch_index_knn_KNNIndex_queryIn
 
     index->SetQueryTimeParams(AnyParams({"ef=512"}));
 
-    //microseconds start = duration_cast<microseconds>(system_clock::now().time_since_epoch());
     index->Search(&query);
-    //microseconds end = duration_cast<microseconds>(system_clock::now().time_since_epoch());
     KNNQueue<float> *result = query.Result()->Clone();
-    //cout << "C search time: " << start.count() << " " << end.count() << " " << (end-start).count() << endl;
-
-    //query.Print();
 
     int resultSize = result->Size();
 
@@ -93,28 +88,6 @@ JNIEXPORT jobjectArray JNICALL Java_org_elasticsearch_index_knn_KNNIndex_queryIn
         env->SetObjectArrayElement(results, i, env->NewObject(resultClass, allArgs, id, distance));
     }
     return results;
-}
-
-JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_KNNIndex_init2(JNIEnv* env, jobject indexObject, jobjectArray vectors, jstring indexPath) {
-
-    initLibrary();
-
-    ObjectVector* dataset = new ObjectVector();
-    for (int i = 0; i < env->GetArrayLength(vectors); i++) {
-        jfloatArray vectorArray = (jfloatArray)env->GetObjectArrayElement(vectors, i);
-        float *vector = env->GetFloatArrayElements(vectorArray, 0);
-        dataset->push_back(new Object(i, -1, sizeof(vector), vector));
-        env->ReleaseFloatArrayElements(vectorArray, vector, 0);
-    }
-
-    Space<float>* space = SpaceFactoryRegistry<float>::Instance().CreateSpace("l2", AnyParams());
-    Index<float>* index = MethodFactoryRegistry<float>::Instance().CreateMethod(false, "hnsw", "l2", *space, *dataset);
-    index->LoadIndex(env->GetStringUTFChars(indexPath, NULL));
-    //delete dataset;
-
-    jclass indexClass = env->GetObjectClass(indexObject);
-    jmethodID setIndex = env->GetMethodID(indexClass, "setIndex", "(J)V");
-    env->CallVoidMethod(indexObject, setIndex, (jlong)index);
 }
 
 JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_KNNIndex_init(JNIEnv* env, jobject indexObject, jstring indexPath) {
