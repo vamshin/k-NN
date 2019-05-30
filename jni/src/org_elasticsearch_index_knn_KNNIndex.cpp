@@ -54,8 +54,6 @@ JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_KNNIndex_saveIndex(JNIEn
     Index<float>* index = MethodFactoryRegistry<float>::Instance().CreateMethod(false, "hnsw", "l2", *space, dataset);
 
     index->CreateIndex(AnyParams());
-    //index->CreateIndex(AnyParams({"M=100", "efConstruction=256"}));
-    //cout << "Indexed dataset size: " << index->GetSize() << endl;
 
     index->SaveIndex(env->GetStringUTFChars(indexPath, NULL));
 }
@@ -65,7 +63,6 @@ JNIEXPORT jobjectArray JNICALL Java_org_elasticsearch_index_knn_KNNIndex_queryIn
     jmethodID getIndex = env->GetMethodID(indexClass, "getIndex", "()J");
     jlong indexValue = env->CallLongMethod(indexObject, getIndex);
     Index<float>* index = reinterpret_cast<Index<float>*>(indexValue);
-    //cout << "Loaded dataset size: " << index->GetSize() << endl;
 
     float* vector = env->GetFloatArrayElements(queryVector, 0);
     Space<float>* space = SpaceFactoryRegistry<float>::Instance().CreateSpace("l2", AnyParams());
