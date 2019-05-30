@@ -42,7 +42,6 @@ import org.elasticsearch.search.sort.ScoreSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.elasticsearch.test.hamcrest.ElasticsearchAssertions;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,7 +49,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-@Ignore
 @ESIntegTestCase.ClusterScope(scope=ESIntegTestCase.Scope.SUITE, numDataNodes=1)
 public class KNNMapperSearcherIT extends ESIntegTestCase {
     private static final Logger logger = LogManager.getLogger(KNNMapperSearcherIT.class);

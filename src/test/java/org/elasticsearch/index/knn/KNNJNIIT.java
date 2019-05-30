@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-//@Ignore
 @ESIntegTestCase.ClusterScope(scope=ESIntegTestCase.Scope.SUITE, numDataNodes=1)
 public class KNNJNIIT extends ESIntegTestCase {
     private static final Logger logger = LogManager.getLogger(KNNJNIIT.class);
@@ -50,8 +49,8 @@ public class KNNJNIIT extends ESIntegTestCase {
         int[] docs = {0, 1, 2};
 
         float[][] vectors = {
-                {1.0f, 2.0f, 3.0f, 4.0f},
                 {5.0f, 6.0f, 7.0f, 8.0f},
+                {1.0f, 2.0f, 3.0f, 4.0f},
                 {9.0f, 10.0f, 11.0f, 12.0f}
         };
 
@@ -85,18 +84,18 @@ public class KNNJNIIT extends ESIntegTestCase {
 
         Map<Integer, Float> scores = Arrays.stream(results).collect(
                 Collectors.toMap(result -> result.getId(), result -> result.getScore()));
-        logger.info("PRINTING...MAP.......");
         logger.info(scores);
 
         assertEquals(results.length, 3);
-        logger.info("VAMSHI>>>>>>>>>>>>>>>>>>>>>>");
-        logger.info(results[0].getScore() + ":" + results[0].getId());
-        logger.info(results[1].getScore() + ": "+ results[1].getId());
-        logger.info(results[2].getScore() + ": "+ results[2].getId());
-        assertEquals(results[0].getId(), 0);
-        assertEquals(results[1].getId(), 1);
-        fail("VAMOIII");
+        /*
+         * scores are evaluated using Euclidean distance. Distance of the documents with
+         * respect to query vector are as follows
+         * doc0 = 11.224972, doc1 = 3.7416575,  doc2 = 19.131126
+         * Nearest neighbor is doc1 then doc0 then doc2
+         */
+        assertEquals(scores.get(0), 11.224972, 0.1);
+        assertEquals(scores.get(1), 3.7416575, 0.1);
+        assertEquals(scores.get(2), 19.131126, 0.1);
         dir.close();
-
     }
 }

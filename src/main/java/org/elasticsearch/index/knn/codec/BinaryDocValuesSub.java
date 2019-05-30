@@ -31,10 +31,9 @@ class BinaryDocValuesSub extends DocIDMerger.Sub {
 
     BinaryDocValuesSub(MergeState.DocMap docMap, BinaryDocValues values) {
         super(docMap);
-        assert values != null; // TODO is this required
+        assert values != null;
         this.values = values;
     }
-
 
     @Override
     public int nextDoc() throws IOException {
