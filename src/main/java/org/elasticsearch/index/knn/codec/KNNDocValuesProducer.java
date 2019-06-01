@@ -15,6 +15,7 @@
 
 package org.elasticsearch.index.knn.codec;
 
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.EmptyDocValuesProducer;
@@ -41,7 +42,14 @@ class KNNDocValuesProducer extends EmptyDocValuesProducer {
         try {
             List<BinaryDocValuesSub> subs = new ArrayList<>(this.mergeState.docValuesProducers.length);
             for (int i = 0; i < this.mergeState.docValuesProducers.length; i++) {
-                subs.add(new BinaryDocValuesSub(mergeState.docMaps[i], this.mergeState.docValuesProducers[i].getBinary(field)));
+                DocValuesProducer docValuesProducer = mergeState.docValuesProducers[i];
+                if (docValuesProducer != null) {
+                    BinaryDocValues values = null;
+                    values = docValuesProducer.getBinary(field);
+                    if (values != null) {
+                        subs.add(new BinaryDocValuesSub(mergeState.docMaps[i], values));
+                    }
+                }
             }
             return new KNNBinaryDocValues(DocIDMerger.of(subs, mergeState.needsIndexSort));
         } catch (Exception e) {

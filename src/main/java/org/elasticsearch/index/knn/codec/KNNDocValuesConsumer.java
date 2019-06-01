@@ -28,8 +28,9 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IndexOutput;
-import org.elasticsearch.index.knn.KNNIndex;
 import org.elasticsearch.index.knn.KNNVectorFieldMapper;
+import org.elasticsearch.index.knn.util.NmsLibVersion;
+import org.elasticsearch.index.knn.v1736.KNNIndex;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -56,17 +57,25 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
     public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
         delegatee.addBinaryField(field, valuesProducer);
 
-        //TODO Non blocking I/O https://issues.amazon.com/issues/CloudSearch-8557
         if (field.attributes().containsKey(KNNVectorFieldMapper.KNN_FIELD)) {
+
+            /**
+             * We always write with latest NMS library version
+             */
+            if(!isNmsLibLatest()) {
+                throw new IllegalStateException("Nms library version mismatch. Correct version: " + NmsLibVersion.LATEST.version());
+            }
+
             BinaryDocValues values = valuesProducer.getBinary(field);
             String indexPath = Paths.get(((FSDirectory) (FilterDirectory.unwrap(state.directory))).getDirectory().toString(),
-                    String.format("%s.hnsw", state.segmentInfo.name)).toString();
+                    String.format("%s_%s.hnsw", state.segmentInfo.name, NmsLibVersion.LATEST.value)).toString();
 
             /**
              * Touch the file so that this gets lifecycle for free
              */
             IndexOutput data;
-            data = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, "", "hnsw"), state.context);
+            data = state.directory.createOutput(IndexFileNames.segmentFileName(
+                    state.segmentInfo.name, NmsLibVersion.LATEST.value, "hnsw"), state.context);
             data.close();
 
             KNNCodec.Pair pair = KNNCodec.getFloats(values);
@@ -127,5 +136,21 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
     public void close() throws IOException {
 
         delegatee.close();
+    }
+
+    private boolean isNmsLibLatest() {
+        return AccessController.doPrivileged(
+                new PrivilegedAction<Boolean>() {
+                    public Boolean run() {
+                        if (!NmsLibVersion.LATEST.version().equals(KNNIndex.VERSION.version())) {
+                            String errorMessage = String.format("KNN codec nms library version mis match. Latest version: %s" +
+                                                                        "Current version: %s", NmsLibVersion.LATEST.version(), KNNIndex.VERSION);
+                            logger.error(errorMessage);
+                            return false;
+                        }
+                        return true;
+                    }
+                }
+        );
     }
 }

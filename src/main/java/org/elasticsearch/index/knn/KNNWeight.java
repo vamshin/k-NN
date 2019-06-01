@@ -27,6 +27,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.elasticsearch.common.io.PathUtils;
+import org.elasticsearch.index.knn.v1736.KNNIndex;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,6 +35,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -71,7 +73,18 @@ public class KNNWeight extends Weight {
              * In case of compound file, extension would be .hnswc otherwise .hnsw
              */
             String hnswFileExtension = reader.getSegmentInfo().info.getUseCompoundFile() ? ".hnswc" : ".hnsw";
-            Path indexPath = PathUtils.get(directory, String.format("%s%s", reader.getSegmentName(), hnswFileExtension));
+            List<String> hnswFile = reader.getSegmentInfo().files().stream().filter(fileName -> fileName.endsWith(hnswFileExtension))
+                                          .collect(Collectors.toList());
+            if(hnswFile.size() > 1) {
+                throw new IllegalStateException("More than one hnsw extension for the segment: " + reader.getSegmentName());
+            }
+
+            /**
+             * Add logic to pick up the right nmslib version based on the version in the name
+             * of the file. As of now we have one version 1.7.3.6. So defering this to future release
+             */
+
+            Path indexPath = PathUtils.get(directory, hnswFile.get(0));
 
             KNNQueryResult[] results = AccessController.doPrivileged(
                     new PrivilegedAction<KNNQueryResult[]>() {
@@ -87,6 +100,7 @@ public class KNNWeight extends Weight {
 
             int maxDoc = Collections.max(scores.keySet()) + 1;
             DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(maxDoc);
+
             DocIdSetBuilder.BulkAdder setAdder = docIdSetBuilder.grow(maxDoc);
 
             Arrays.stream(results).forEach(result -> setAdder.add(result.getId()));
