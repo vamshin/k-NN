@@ -27,6 +27,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.elasticsearch.common.io.PathUtils;
+import org.elasticsearch.index.knn.codec.KNNCodec;
 import org.elasticsearch.index.knn.v1736.KNNIndex;
 
 import java.io.IOException;
@@ -72,7 +73,7 @@ public class KNNWeight extends Weight {
             /**
              * In case of compound file, extension would be .hnswc otherwise .hnsw
              */
-            String hnswFileExtension = reader.getSegmentInfo().info.getUseCompoundFile() ? ".hnswc" : ".hnsw";
+            String hnswFileExtension = reader.getSegmentInfo().info.getUseCompoundFile() ? KNNCodec.HNSW_COMPUND_EXTENSION : KNNCodec.HNSW_EXTENSION;
             List<String> hnswFile = reader.getSegmentInfo().files().stream().filter(fileName -> fileName.endsWith(hnswFileExtension))
                                           .collect(Collectors.toList());
             if(hnswFile.size() > 1) {
@@ -100,11 +101,8 @@ public class KNNWeight extends Weight {
 
             int maxDoc = Collections.max(scores.keySet()) + 1;
             DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(maxDoc);
-
             DocIdSetBuilder.BulkAdder setAdder = docIdSetBuilder.grow(maxDoc);
-
             Arrays.stream(results).forEach(result -> setAdder.add(result.getId()));
-
             DocIdSetIterator docIdSetIter = docIdSetBuilder.build().iterator();
             return new KNNScorer(this, docIdSetIter, scores, boost);
         } catch (Exception e) {

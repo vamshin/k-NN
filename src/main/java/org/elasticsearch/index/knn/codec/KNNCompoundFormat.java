@@ -27,8 +27,8 @@ public class KNNCompoundFormat extends CompoundFormat {
 
     @Override
     public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
-        String prefix =  String.format("%s_%s",si.name , NmsLibVersion.LATEST.value);
-        String hnswFile = prefix + ".hnsw";
+        String prefix =  String.format("%s_%s",si.name , NmsLibVersion.LATEST.buildVersion);
+        String hnswFile = prefix + KNNCodec.HNSW_EXTENSION;
 
         /**
          * If hnsw file present, remove it from compounding file.
@@ -43,11 +43,12 @@ public class KNNCompoundFormat extends CompoundFormat {
             si.setFiles(segmentFiles);
 
             /**
-             * After compouding the original segment files are deleted.  As part of this our .hnsw file
+             * After compouding, the original segment files are deleted.  As part of this .hnsw file
              * will also be deleted. So We create new file format with ".hnswc" extension as a compound file
              * for hnsw.
              */
-            dir.copyFrom(dir, hnswFile, prefix + ".hnswc", context);
+            String hnswCompoundFile = prefix + KNNCodec.HNSW_COMPUND_EXTENSION;
+            dir.copyFrom(dir, hnswFile, hnswCompoundFile, context);
         }
 
         Codec.getDefault().compoundFormat().write(dir, si, context);

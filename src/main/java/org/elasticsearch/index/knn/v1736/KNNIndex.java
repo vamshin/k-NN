@@ -28,10 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class KNNIndex {
 
-    public static NmsLibVersion VERSION =NmsLibVersion.V1736;
+    public static NmsLibVersion VERSION = NmsLibVersion.V1736;
 
     static {
-        System.loadLibrary(NmsLibVersion.V1736.version());
+        System.loadLibrary(NmsLibVersion.V1736.indexLibraryVersion());
     }
 
     private long index;

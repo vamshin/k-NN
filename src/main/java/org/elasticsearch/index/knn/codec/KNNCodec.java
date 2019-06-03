@@ -46,6 +46,9 @@ public final class KNNCodec extends Codec {
     private static final Logger logger = LogManager.getLogger(KNNCodec.class);
     private static final String KNN_CODEC = "KNNCodec";
 
+    public static final String HNSW_EXTENSION = ".hnsw";
+    public static final String HNSW_COMPUND_EXTENSION = ".hnswc";
+
     private final DocValuesFormat docValuesFormat;
     private final DocValuesFormat perFieldDocValuesFormat;
     private final CompoundFormat compoundFormat;

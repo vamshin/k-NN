@@ -21,6 +21,10 @@ import org.apache.lucene.index.MergeState;
 
 import java.io.IOException;
 
+/**
+ * Place holder class for the docIds and the respective
+ * binary values.
+ */
 class BinaryDocValuesSub extends DocIDMerger.Sub {
 
     private final BinaryDocValues values;
@@ -31,7 +35,9 @@ class BinaryDocValuesSub extends DocIDMerger.Sub {
 
     BinaryDocValuesSub(MergeState.DocMap docMap, BinaryDocValues values) {
         super(docMap);
-        assert values != null;
+        if(values == null || (values.docID() != -1)) {
+            throw new IllegalStateException("Doc values is either null or docID is not -1 ");
+        }
         this.values = values;
     }
 

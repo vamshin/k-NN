@@ -63,19 +63,20 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
              * We always write with latest NMS library version
              */
             if(!isNmsLibLatest()) {
-                throw new IllegalStateException("Nms library version mismatch. Correct version: " + NmsLibVersion.LATEST.version());
+                throw new IllegalStateException("Nms library version mismatch. Correct version: " + NmsLibVersion.LATEST.indexLibraryVersion());
             }
 
             BinaryDocValues values = valuesProducer.getBinary(field);
             String indexPath = Paths.get(((FSDirectory) (FilterDirectory.unwrap(state.directory))).getDirectory().toString(),
-                    String.format("%s_%s.hnsw", state.segmentInfo.name, NmsLibVersion.LATEST.value)).toString();
+                    String.format("%s_%s.hnsw", state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion)).toString();
 
             /**
-             * Touch the file so that this gets lifecycle for free
+             * Touch the file so that Lucene Directory handles lifecycle for this file after
+             * segment merges
              */
             IndexOutput data;
             data = state.directory.createOutput(IndexFileNames.segmentFileName(
-                    state.segmentInfo.name, NmsLibVersion.LATEST.value, "hnsw"), state.context);
+                    state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion, "hnsw"), state.context);
             data.close();
 
             KNNCodec.Pair pair = KNNCodec.getFloats(values);
@@ -142,9 +143,10 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
         return AccessController.doPrivileged(
                 new PrivilegedAction<Boolean>() {
                     public Boolean run() {
-                        if (!NmsLibVersion.LATEST.version().equals(KNNIndex.VERSION.version())) {
+                        if (!NmsLibVersion.LATEST.indexLibraryVersion().equals(KNNIndex.VERSION.indexLibraryVersion())) {
                             String errorMessage = String.format("KNN codec nms library version mis match. Latest version: %s" +
-                                                                        "Current version: %s", NmsLibVersion.LATEST.version(), KNNIndex.VERSION);
+                                                                        "Current version: %s",
+                                    NmsLibVersion.LATEST.indexLibraryVersion(), KNNIndex.VERSION);
                             logger.error(errorMessage);
                             return false;
                         }
