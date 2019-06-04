@@ -99,4 +99,27 @@ public class KNNJNIIT extends ESIntegTestCase {
         assertEquals(scores.get(2), 19.131126, 0.1);
         dir.close();
     }
+
+    public void testAssertExceptionFromJni() throws Exception {
+
+        Directory dir = newFSDirectory(createTempDir());
+        String segmentName = "_dummy1";
+        String indexPath = Paths.get(((FSDirectory) (FilterDirectory.unwrap(dir))).getDirectory().toString(),
+                String.format("%s.hnsw", segmentName)).toString();
+
+        /***
+         * Trying to load index which did not exist. This results in Runtime Error in nmslib.
+         * Making sure c++ exceptions are casted to java Exception to avoid ES process crash
+         */
+        expectThrows(Exception.class, () ->
+        AccessController.doPrivileged(
+                new PrivilegedAction<Void>() {
+                    public Void run() {
+                        KNNIndex index = KNNIndex.loadIndex(indexPath.toString());
+                        return null;
+                    }
+                }
+        ));
+        dir.close();
+    }
 }
