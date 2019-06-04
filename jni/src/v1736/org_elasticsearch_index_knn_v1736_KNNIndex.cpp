@@ -36,8 +36,8 @@ using similarity::KNNQueue;
 
 extern "C"
 
-struct NewJavaException {
-    NewJavaException(JNIEnv* env, const char* type = "", const char* message = "")
+struct JavaException {
+    JavaException(JNIEnv* env, const char* type = "", const char* message = "")
     {
         jclass newExcCls = env->FindClass(type);
         if (newExcCls != NULL)
@@ -57,16 +57,16 @@ void catch_cpp_exception_and_throw_java(JNIEnv* env)
         throw;
     }
     catch (const std::bad_alloc& rhs) {
-        NewJavaException(env, "java/io/IOException", rhs.what());
+        JavaException(env, "java/io/IOException", rhs.what());
     }
     catch (const std::runtime_error& re) {
-        NewJavaException(env, "java/lang/Exception", re.what());
+        JavaException(env, "java/lang/Exception", re.what());
     }
     catch (const std::exception& e) {
-        NewJavaException(env, "java/lang/Exception", e.what());
+        JavaException(env, "java/lang/Exception", e.what());
     }
     catch (...) {
-        NewJavaException(env, "java/lang/Exception", "Unknown exception occured");
+        JavaException(env, "java/lang/Exception", "Unknown exception occured");
     }
 }
 
