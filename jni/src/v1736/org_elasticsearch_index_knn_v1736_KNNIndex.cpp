@@ -162,6 +162,7 @@ JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_v1736_KNNIndex_gc(JNIEnv
         jlong indexValue = env->CallLongMethod(indexObject, getIndex);
         cout << "Index gc value: " << indexValue << endl;
         Index<float>* index = reinterpret_cast<Index<float>*>(indexValue);
+        assert_no_exception(env);
         delete index;
         assert_no_exception(env);
     }

@@ -63,7 +63,8 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
              * We always write with latest NMS library version
              */
             if(!isNmsLibLatest()) {
-                throw new IllegalStateException("Nms library version mismatch. Correct version: " + NmsLibVersion.LATEST.indexLibraryVersion());
+                throw new IllegalStateException("Nms library version mismatch. Correct version: "
+                                                        + NmsLibVersion.LATEST.indexLibraryVersion());
             }
 
             BinaryDocValues values = valuesProducer.getBinary(field);

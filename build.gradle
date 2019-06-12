@@ -120,9 +120,9 @@ integTestRunner {
 
     // The --debug-jvm command-line option makes the cluster debuggable; this makes the tests debuggable
     if (System.getProperty("test.debug") != null) {
-        jvmArgs '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
+        jvmArg '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
     }
-
+    
     systemProperty "java.library.path", "$rootDir/buildSrc"
     // allows integration test classes to access test resource from project root path
     systemProperty('project.root', project.rootDir.absolutePath)

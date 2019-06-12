@@ -268,6 +268,7 @@ public class KNNMapperSearcherIT extends ESIntegTestCase {
         ElasticsearchAssertions.assertHitCount(searchResponse, k);
     }
 
+//    @Ignore
     public void testKNNResultsWithDeleteDoc() throws Exception {
         createKnnIndex("testindex");
         addTestData();

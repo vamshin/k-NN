@@ -15,11 +15,14 @@
 
 package org.elasticsearch.index.knn.v1736;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.knn.KNNQueryResult;
 import org.elasticsearch.index.knn.util.NmsLibVersion;
+import org.elasticsearch.index.knn.KNNIndexCache;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.io.File;
 
 /**
  * JNI layer to communicate with the nmslib
@@ -28,13 +31,18 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class KNNIndex {
 
-    public static NmsLibVersion VERSION = NmsLibVersion.V1736;
+    private static Logger logger = LogManager.getLogger(KNNIndex.class);
 
+    private long index;
+    private long indexSize;
+
+    static KNNIndexCache knnIndexCache = new KNNIndexCache();
+    public static NmsLibVersion VERSION = NmsLibVersion.V1736;
     static {
         System.loadLibrary(NmsLibVersion.V1736.indexLibraryVersion());
     }
 
-    private long index;
+    public boolean isDeleted = false;
 
     public long getIndex() {
         return index;
@@ -44,7 +52,36 @@ public class KNNIndex {
         this.index = index;
     }
 
-    private static Map<String, KNNIndex> loadedIndices = new ConcurrentHashMap<>();
+    public void setIndexSize(long indexSize) {
+        this.indexSize = indexSize;
+    }
+
+    /**
+     * This function is useful in computing the weight for caching
+     * @return size of the index on the disk
+     */
+    public long getIndexSize() {
+        return this.indexSize;
+    }
+
+    /**
+     * determines the size of the hnsw index on disk
+     * @param indexPath absolute path of the index
+     *
+     */
+    public void computeWeight(String indexPath) {
+        if(!Strings.isNullOrEmpty(indexPath)) {
+            File file = new File(indexPath);
+            if (!file.exists() || !file.isFile()) {
+                logger.info("File deleted. Skipping " + indexPath);
+                setIndexSize(0);
+            } else {
+                setIndexSize(file.length());
+            }
+        }
+    }
+
+//    private static Map<String, KNNIndex> loadedIndices = new ConcurrentHashMap<>();
 
     public static native void saveIndex(int[] ids, float[][] data, String indexPath);
 
@@ -56,16 +93,37 @@ public class KNNIndex {
      * @param indexPath path where the hnsw index is stored
      * @return knn index that can be queried for k nearest neighbours
      */
+//    public static KNNIndex loadIndex(String indexPath) {
+//        KNNIndex loadedIndex = loadedIndices.get(indexPath);
+//        if (loadedIndex == null) {
+//            KNNIndex index = new KNNIndex();
+//            index.init(indexPath);
+//            loadedIndices.put(indexPath, index);
+//            loadedIndex = index;
+//            knnIndexCache.addEntry(indexPath, index.getIndex());
+//        }
+//        return loadedIndex;
+//    }
+
+
     public static KNNIndex loadIndex(String indexPath) {
-        KNNIndex loadedIndex = loadedIndices.get(indexPath);
-        if (loadedIndex == null) {
-            KNNIndex index = new KNNIndex();
-            index.init(indexPath);
-            loadedIndices.put(indexPath, index);
-            loadedIndex = index;
-        }
-        return loadedIndex;
+        KNNIndex index = new KNNIndex();
+        index.init(indexPath);
+        index.computeWeight(indexPath);
+        return index;
     }
+
+
+//        KNNIndex loadedIndex = loadedIndices.get(indexPath);
+//        if (loadedIndex == null) {
+//            KNNIndex index = new KNNIndex();
+//            index.init(indexPath);
+//            loadedIndices.put(indexPath, index);
+//            loadedIndex = index;
+//            knnIndexCache.addEntry(indexPath, index.getIndex());
+//        }
+//        return loadedIndex;
+//    }
 
     public native void init(String indexPath);
 

@@ -1,9 +1,15 @@
 package org.elasticsearch.index.knn;
 
+import org.elasticsearch.common.cache.Cache;
+import org.elasticsearch.common.cache.CacheBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.test.ESTestCase;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class KNNQueryBuilderTests extends ESTestCase {
 
@@ -63,5 +69,17 @@ public class KNNQueryBuilderTests extends ESTestCase {
         assertEquals(knnQueryBuilder.getK(), query.getK());
         assertEquals(knnQueryBuilder.fieldName(), query.getField());
         assertEquals(knnQueryBuilder.vector(), query.getQueryVector());
+    }
+
+    public void testCache() {
+        AtomicLong evictions = new AtomicLong();
+        List<String> evicted = new ArrayList<>();
+        Cache<String, Long> cache =
+                CacheBuilder.<String, Long>builder()
+                        .setMaximumWeight(10)
+                        .removalListener(notification -> {evictions.incrementAndGet(); evicted.add(notification.getKey());})
+                        .build();
+
+
     }
 }

@@ -15,6 +15,8 @@
 
 package org.elasticsearch.index.knn;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SegmentReader;
@@ -45,9 +47,11 @@ import java.util.stream.Collectors;
  * Calculate query weights and build query scorers.
  */
 public class KNNWeight extends Weight {
-
+    private static Logger logger = LogManager.getLogger(KNNWeight.class);
     private final KNNQuery knnQuery;
     private final float boost;
+
+    private static KNNIndexCache knnIndexCache = new KNNIndexCache();
 
     public KNNWeight(KNNQuery query, float boost) {
         super(query);
@@ -73,31 +77,41 @@ public class KNNWeight extends Weight {
             /**
              * In case of compound file, extension would be .hnswc otherwise .hnsw
              */
-            String hnswFileExtension = reader.getSegmentInfo().info.getUseCompoundFile() ? KNNCodec.HNSW_COMPUND_EXTENSION : KNNCodec.HNSW_EXTENSION;
+            String hnswFileExtension = reader.getSegmentInfo().info.getUseCompoundFile()
+                                               ? KNNCodec.HNSW_COMPUND_EXTENSION : KNNCodec.HNSW_EXTENSION;
             List<String> hnswFile = reader.getSegmentInfo().files().stream().filter(fileName -> fileName.endsWith(hnswFileExtension))
                                           .collect(Collectors.toList());
             if(hnswFile.size() > 1) {
-                throw new IllegalStateException("More than one hnsw extension for the segment: " + reader.getSegmentName());
+                throw new IllegalStateException("More than one hnsw extension for the segment: "
+                                                        + reader.getSegmentName());
             }
 
             /**
-             * Add logic to pick up the right nmslib version based on the version in the name
-             * of the file. As of now we have one version 1.7.3.6. So defering this to future release
+             * Add logic to pick up the right nmslib version based on the version
+             * in the name of the file. As of now we have one version 1.7.3.6.
+             * So defering this to future release
              */
 
             Path indexPath = PathUtils.get(directory, hnswFile.get(0));
-
             KNNQueryResult[] results = AccessController.doPrivileged(
                     new PrivilegedAction<KNNQueryResult[]>() {
                         public KNNQueryResult[] run() {
-                            KNNIndex index = KNNIndex.loadIndex(indexPath.toString());
+                            KNNIndex index = knnIndexCache.getIndex(indexPath.toString());
+                            if(index.isDeleted) {
+                                // Race condition occured. Looks like entry got evicted from cache and
+                                // possibly gc. Try to read again
+                                index = knnIndexCache.getIndex(indexPath.toString());
+                            }
                             return index.queryIndex(knnQuery.getQueryVector(), knnQuery.getK());
                         }
                     }
             );
 
-            Map<Integer, Float> scores = Arrays.stream(results).collect(
-                    Collectors.toMap(result -> result.getId(), result -> result.getScore()));
+            Map<Integer, Float> scores = Collections.emptyMap();
+            if (results != null) {
+                scores = Arrays.stream(results).collect(
+                        Collectors.toMap(result -> result.getId(), result -> result.getScore()));
+            }
 
             int maxDoc = Collections.max(scores.keySet()) + 1;
             DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(maxDoc);
