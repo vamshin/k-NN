@@ -1,6 +1,10 @@
+ [![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+ 
 # Gradle Offline Dependencies Plugin
 
 This plugin resolves your project dependency artifacts (jar, javadoc, pom, etc.), including transitive ones, and stores them alongside your code. This way you can always build your project without having to fetch dependencies from remote servers.
+
+Tested with Gradle 5.1
 
 ## How to integrate
 
@@ -14,7 +18,7 @@ buildscript {
     }
   }
   dependencies {
-    classpath 'gradle.plugin.io.pry.gradle.offline_dependencies:gradle-offline-dependencies-plugin:0.4'
+    classpath 'gradle.plugin.io.pry.gradle.offline_dependencies:gradle-offline-dependencies-plugin:0.5.0'
   }
 }
 
@@ -25,7 +29,7 @@ For Gradle >= 2.1:
 
 ```
 plugins {
-  id 'io.pry.gradle.offline_dependencies' version '0.4'
+  id 'io.pry.gradle.offline_dependencies' version '0.5.0'
 }
 ```
 
@@ -101,7 +105,7 @@ buildscript {
   }
 
   dependencies {
-    classpath 'gradle.plugin.io.pry.gradle.offline_dependencies:gradle-offline-dependencies-plugin:0.4'
+    classpath 'gradle.plugin.io.pry.gradle.offline_dependencies:gradle-offline-dependencies-plugin:0.5.0'
     classpath 'some.other.buildscript:dependency:1.0.0'
   }
 }
@@ -139,7 +143,7 @@ buildscript {
     }
   }
   dependencies {
-    classpath "gradle.plugin.io.pry.gradle.offline_dependencies:gradle-offline-dependencies-plugin:0.4"
+    classpath "gradle.plugin.io.pry.gradle.offline_dependencies:gradle-offline-dependencies-plugin:0.5.0"
   }
 }
 

@@ -1,20 +1,18 @@
-// Copied from Gradle offline dependency plugin and fixed to work on Gradle 4.10
+// Copied from Gradle offline dependency plugin and fixed to work on Gradle 5.10
 apply plugin: 'groovy'
 
 apply from: '../build-tools/amazon-sandbox.gradle'
-ext {
-	offlineRepositoryRoot = rootProject.file("${rootDir.parentFile}/offline-repo").absolutePath
-}
+
 repositories {
-	if (!sandboxedBuild) {
-		mavenCentral()
-		maven { url 'https://repo.gradle.org/gradle/libs-releases' }
-	}
+    if (!sandboxedBuild) {
+        mavenCentral()
+        maven { url 'https://repo.gradle.org/gradle/libs-releases' }
+    }
 }
 
 ext {
   mavenVersion = '3.6.0'
-  jarjarVersion = '1.2.1'
+    jarjarVersion = '1.2.1'
 
   thirdpartyLibsDir = "$project.projectDir/libs/"
 }
@@ -25,45 +23,45 @@ configurations {
 }
 
 dependencies {
-	compile gradleApi()
-	compile localGroovy()
+    compile gradleApi()
+    compile localGroovy()
 
-	compile fileTree(thirdpartyLibsDir)
+    compile fileTree(thirdpartyLibsDir)
 
-	// thirdparty dependencies and repackaging
-	jarjar "org.gradle.jarjar:jarjar:$jarjarVersion"
-	thirdparty "org.apache.maven:maven-model-builder:$mavenVersion"
+    // thirdparty dependencies and repackaging
+    jarjar "org.gradle.jarjar:jarjar:$jarjarVersion"
+    thirdparty "org.apache.maven:maven-model-builder:$mavenVersion"
 }
 
 task repackageDependencies(type: Jar) {
-	baseName = 'offline-dependencies-plugin-thirdparty-repackaged-all'
-	version = project.version
-	destinationDir = new File(thirdpartyLibsDir)
+    baseName = 'offline-dependencies-plugin-thirdparty-repackaged-all'
+    version = project.version
+    destinationDir = new File(thirdpartyLibsDir)
 
-	doLast {
-		project.ant {
-			taskdef name: "jarjar", classname: "com.tonicsystems.jarjar.JarJarTask", classpath: configurations.jarjar.asPath
-			jarjar(destfile: archivePath) {
-				configurations.thirdparty.each { originalJar ->
-					zipfileset(src: originalJar)
-				}
-				rule(pattern: 'org.**', result: 'io.pry.gradle.offline_dependencies.repackaged.org.@1')
-				rule(pattern: 'com.**', result: 'io.pry.gradle.offline_dependencies.repackaged.com.@1')
-				rule(pattern: 'licenses.**', result: 'io.pry.gradle.offline_dependencies.repackaged.licenses.@1')
-			}
-		}
-	}
+    doLast {
+        project.ant {
+            taskdef name: "jarjar", classname: "com.tonicsystems.jarjar.JarJarTask", classpath: configurations.jarjar.asPath
+            jarjar(destfile: archivePath) {
+                configurations.thirdparty.each { originalJar ->
+                    zipfileset(src: originalJar)
+                }
+                rule(pattern: 'org.**', result: 'io.pry.gradle.offline_dependencies.repackaged.org.@1')
+                rule(pattern: 'com.**', result: 'io.pry.gradle.offline_dependencies.repackaged.com.@1')
+                rule(pattern: 'licenses.**', result: 'io.pry.gradle.offline_dependencies.repackaged.licenses.@1')
+            }
+        }
+    }
 }
 
 if (!sandboxedBuild) {
-	compileJava.dependsOn 'repackageDependencies'
+    compileJava.dependsOn 'repackageDependencies'
 }
-apply from: '../build-tools/brazil.gradle'
+
 task extractOfflineRepo(type: Copy) {
-	onlyIf { file(offline_archive_name).exists() }
-	from zipTree(file(offline_archive_name))
-	into rootDir.parentFile.parentFile
-	doLast { delete file(offline_archive_name) }
+    onlyIf { file('offline-repo.zip').exists() }
+    from zipTree(file('offline-repo.zip'))
+    into rootDir.parentFile.parentFile
+    doLast { delete file('offline-repo.zip') }
 }
 
 compileJava.dependsOn extractOfflineRepo
