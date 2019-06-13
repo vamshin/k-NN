@@ -17,8 +17,10 @@ package org.elasticsearch.index.knn;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreMode;
+//import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
+
+import java.io.IOException;
 
 /**
  * Class for representing the KNN query
@@ -51,12 +53,12 @@ public class KNNQuery extends Query {
      * Constructs Weight implementation for this query
      *
      * @param searcher  searcher for given segment
-     * @param scoreMode How the produced scorers will be consumed.
+     * @param needsScores How the produced scorers will be consumed.
      * @param boost     The boost that is propagated by the parent queries.
      * @return Weight   For calculating scores
      */
     @Override
-    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) throws IOException {
         return new KNNWeight(this, boost);
     }
 

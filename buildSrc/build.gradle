@@ -2,7 +2,9 @@
 apply plugin: 'groovy'
 
 apply from: '../build-tools/amazon-sandbox.gradle'
-
+ext {
+	offlineRepositoryRoot = rootProject.file("${rootDir.parentFile}/offline-repo").absolutePath
+}
 repositories {
 	if (!sandboxedBuild) {
 		mavenCentral()
@@ -11,7 +13,7 @@ repositories {
 }
 
 ext {
-  mavenVersion = '3.3.9'
+  mavenVersion = '3.6.0'
   jarjarVersion = '1.2.1'
 
   thirdpartyLibsDir = "$project.projectDir/libs/"
@@ -56,12 +58,12 @@ task repackageDependencies(type: Jar) {
 if (!sandboxedBuild) {
 	compileJava.dependsOn 'repackageDependencies'
 }
-
+apply from: '../build-tools/brazil.gradle'
 task extractOfflineRepo(type: Copy) {
-	onlyIf { file('offline-repo.zip').exists() }
-	from zipTree(file('offline-repo.zip'))
+	onlyIf { file(offline_archive_name).exists() }
+	from zipTree(file(offline_archive_name))
 	into rootDir.parentFile.parentFile
-	doLast { delete file('offline-repo.zip') }
+	doLast { delete file(offline_archive_name) }
 }
 
 compileJava.dependsOn extractOfflineRepo

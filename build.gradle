@@ -69,6 +69,8 @@ apply from: 'build-tools/prepare-offline-repo.gradle'
 
 ext {
     projectSubstitutions = [:]
+    licenseFile = rootProject.file('LICENSE.TXT')
+    noticeFile = rootProject.file('NOTICE')
 }
 
 esplugin {
@@ -76,8 +78,8 @@ esplugin {
     // zip file name and plugin name in ${elasticsearch.plugin.name} read by ES when plugin loading
     description 'Open Distro for Elasticsearch KNN'
     classname 'org.elasticsearch.plugin.knn.KNNPlugin'
-    licenseFile = rootProject.file('LICENSE.txt')
-    noticeFile = rootProject.file('NOTICE.txt')
+//    licenseFile = rootProject.file('LICENSE.txt')
+//    noticeFile = rootProject.file('NOTICE.txt')
 
 }
 
@@ -98,8 +100,8 @@ dependencies {
     testImplementation "org.elasticsearch.test:framework:${es_version}"
 }
 
-licenseFile = rootProject.file('LICENSE.txt')
-noticeFile = rootProject.file('NOTICE.txt')
+//licenseFile = rootProject.file('LICENSE.txt')
+//noticeFile = rootProject.file('NOTICE.txt')
 
 licenseHeaders.enabled = false
 dependencyLicenses.enabled = false
