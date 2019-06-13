@@ -32,10 +32,11 @@ if (sandboxedBuild) {
         gradleJavaVersion = '10'
         inFipsJvm = false
         java9Home = compilerJavaHome
+        defaultParallel = 'auto'
     }
 }
 
 ext {
-    es_mv = project.properties["es.mv"] ?: "6.5"
+    es_mv = project.properties["es.mv"] ?: "6.7"
     offline_archive_name = "es-knn-offline-repo-${es_mv}.zip"
 }

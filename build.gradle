@@ -70,7 +70,7 @@ apply from: 'build-tools/prepare-offline-repo.gradle'
 ext {
     projectSubstitutions = [:]
     licenseFile = rootProject.file('LICENSE.TXT')
-    noticeFile = rootProject.file('NOTICE')
+    noticeFile = rootProject.file('NOTICE.TXT')
 }
 
 esplugin {
@@ -143,6 +143,10 @@ run {
 //TODO fix these
 checkstyleTest.ignoreFailures = true
 forbiddenApis.ignoreFailures = true
+forbiddenPatterns {
+    setEnabled(false)
+}
+
 
 // We don't need to follow ES testing naming conventions.
 // see https://github.com/elastic/elasticsearch/blob/323f312bbc829a63056a79ebe45adced5099f6e6/buildSrc/src/main/java/org/elasticsearch/gradle/precommit/TestingConventionsTasks.java
