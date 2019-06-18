@@ -81,8 +81,6 @@ public class KNNIndex {
         }
     }
 
-//    private static Map<String, KNNIndex> loadedIndices = new ConcurrentHashMap<>();
-
     public static native void saveIndex(int[] ids, float[][] data, String indexPath);
 
     public native KNNQueryResult[] queryIndex(float[] query, int k);
@@ -93,37 +91,12 @@ public class KNNIndex {
      * @param indexPath path where the hnsw index is stored
      * @return knn index that can be queried for k nearest neighbours
      */
-//    public static KNNIndex loadIndex(String indexPath) {
-//        KNNIndex loadedIndex = loadedIndices.get(indexPath);
-//        if (loadedIndex == null) {
-//            KNNIndex index = new KNNIndex();
-//            index.init(indexPath);
-//            loadedIndices.put(indexPath, index);
-//            loadedIndex = index;
-//            knnIndexCache.addEntry(indexPath, index.getIndex());
-//        }
-//        return loadedIndex;
-//    }
-
-
     public static KNNIndex loadIndex(String indexPath) {
         KNNIndex index = new KNNIndex();
         index.init(indexPath);
         index.computeWeight(indexPath);
         return index;
     }
-
-
-//        KNNIndex loadedIndex = loadedIndices.get(indexPath);
-//        if (loadedIndex == null) {
-//            KNNIndex index = new KNNIndex();
-//            index.init(indexPath);
-//            loadedIndices.put(indexPath, index);
-//            loadedIndex = index;
-//            knnIndexCache.addEntry(indexPath, index.getIndex());
-//        }
-//        return loadedIndex;
-//    }
 
     public native void init(String indexPath);
 

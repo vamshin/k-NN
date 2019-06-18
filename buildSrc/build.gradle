@@ -57,11 +57,12 @@ if (!sandboxedBuild) {
     compileJava.dependsOn 'repackageDependencies'
 }
 
+apply from: '../build-tools/brazil.gradle'
 task extractOfflineRepo(type: Copy) {
-    onlyIf { file('offline-repo.zip').exists() }
-    from zipTree(file('offline-repo.zip'))
+    onlyIf { file(offline_archive_name).exists() }
+    from zipTree(file(offline_archive_name))
     into rootDir.parentFile.parentFile
-    doLast { delete file('offline-repo.zip') }
+    doLast { delete file(offline_archive_name) }
 }
 
 compileJava.dependsOn extractOfflineRepo
