@@ -17,6 +17,7 @@ package org.elasticsearch.index.knn.codec;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
@@ -28,13 +29,17 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.OutputStreamIndexOutput;
 import org.elasticsearch.index.knn.KNNVectorFieldMapper;
 import org.elasticsearch.index.knn.util.NmsLibVersion;
 import org.elasticsearch.index.knn.v1736.KNNIndex;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 
@@ -71,24 +76,42 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
             String indexPath = Paths.get(((FSDirectory) (FilterDirectory.unwrap(state.directory))).getDirectory().toString(),
                     String.format("%s_%s.hnsw", state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion)).toString();
 
-            /**
-             * Touch the file so that Lucene Directory handles lifecycle for this file after
-             * segment merges
-             */
-            IndexOutput data;
-            data = state.directory.createOutput(IndexFileNames.segmentFileName(
-                    state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion, "hnsw"), state.context);
-            data.close();
+            IndexOutput data = null;
+            try {
+                /**
+                 * Touch the file so that Lucene Directory handles lifecycle for this file after
+                 * segment merges
+                 */
+                data = state.directory.createOutput(IndexFileNames.segmentFileName(
+                        state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion, "hnsw"), state.context);
+                data.close();
 
-            KNNCodec.Pair pair = KNNCodec.getFloats(values);
-            AccessController.doPrivileged(
-                    new PrivilegedAction<Void>() {
-                        public Void run() {
-                            KNNIndex.saveIndex(pair.docs, pair.vectors, indexPath);
-                            return null;
+                KNNCodec.Pair pair = KNNCodec.getFloats(values);
+                AccessController.doPrivileged(
+                        new PrivilegedAction<Void>() {
+                            public Void run() {
+                                KNNIndex.saveIndex(pair.docs, pair.vectors, indexPath);
+                                return null;
+                            }
                         }
-                    }
-            );
+                );
+
+                /**
+                 * Add Footer here
+                 */
+                try (OutputStream outputStream = Files.newOutputStream(Paths.get(indexPath), StandardOpenOption.APPEND);
+                OutputStreamIndexOutput oStream = new OutputStreamIndexOutput(indexPath, "append_footer", outputStream, 1000)) {
+                    oStream.writeInt(-1);
+                    CodecUtil.writeFooter(oStream);
+                } catch (IOException ex) {
+                    logger.error(ex.getMessage(), ex);
+                }
+            } catch(Exception ex) {
+                logger.error("[KNN] " + ex);
+                if(null != data) {
+                    data.close();
+                }
+            }
         }
     }
 
@@ -136,7 +159,6 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
 
     @Override
     public void close() throws IOException {
-
         delegatee.close();
     }
 

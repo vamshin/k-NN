@@ -92,7 +92,15 @@ public class KNNWeight extends Weight {
              * So defering this to future release
              */
 
+
             Path indexPath = PathUtils.get(directory, hnswFile.get(0));
+
+
+
+//           IndexInput indexInput = reader.directory().openInput(indexPath.toString(), IOContext.DEFAULT);
+//            CodecUtil.retrieveChecksum(indexInput);
+
+
             KNNQueryResult[] results = AccessController.doPrivileged(
                     new PrivilegedAction<KNNQueryResult[]>() {
                         public KNNQueryResult[] run() {
