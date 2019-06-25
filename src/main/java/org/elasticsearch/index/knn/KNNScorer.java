@@ -54,7 +54,7 @@ public class KNNScorer extends Scorer {
         assert docID() != DocIdSetIterator.NO_MORE_DOCS;
         Float score = scores.get(docID());
         if (score == null)
-            throw new RuntimeException("Null score for the docID: " + docID()); // TODO Check if the docid has base + ordinal
+            throw new RuntimeException("Null score for the docID: " + docID());
         return score;
     }
 

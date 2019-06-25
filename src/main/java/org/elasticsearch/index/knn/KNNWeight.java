@@ -81,6 +81,9 @@ public class KNNWeight extends Weight {
                                                ? KNNCodec.HNSW_COMPUND_EXTENSION : KNNCodec.HNSW_EXTENSION;
             List<String> hnswFile = reader.getSegmentInfo().files().stream().filter(fileName -> fileName.endsWith(hnswFileExtension))
                                           .collect(Collectors.toList());
+
+            //TODO empty check and assert.
+            // Able to proceed further if the corresponding hnsw index does not present
             if(hnswFile.size() != 1) {
                 throw new IllegalStateException("More than one hnsw extension for the segment: "
                                                         + reader.getSegmentName());
@@ -97,7 +100,7 @@ public class KNNWeight extends Weight {
 
 
 
-//           IndexInput indexInput = reader.directory().openInput(indexPath.toString(), IOContext.DEFAULT);
+//           IndexInput indexInput = reader.directory().openInput(hnswFile.get(0), IOContext.DEFAULT);
 //            CodecUtil.retrieveChecksum(indexInput);
 
 

@@ -23,23 +23,20 @@ import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.OutputStreamIndexOutput;
+import org.apache.lucene.util.IOUtils;
 import org.elasticsearch.index.knn.KNNVectorFieldMapper;
 import org.elasticsearch.index.knn.util.NmsLibVersion;
 import org.elasticsearch.index.knn.v1736.KNNIndex;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 
@@ -53,7 +50,7 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
     private DocValuesConsumer delegatee;
     private SegmentWriteState state;
 
-    KNNDocValuesConsumer(DocValuesConsumer delegatee, SegmentWriteState state) {
+    KNNDocValuesConsumer(DocValuesConsumer delegatee, SegmentWriteState state) throws IOException {
         this.delegatee = delegatee;
         this.state = state;
     }
@@ -75,22 +72,20 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
             BinaryDocValues values = valuesProducer.getBinary(field);
             String indexPath = Paths.get(((FSDirectory) (FilterDirectory.unwrap(state.directory))).getDirectory().toString(),
                     String.format("%s_%s.hnsw", state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion)).toString();
-
-            IndexOutput data = null;
             try {
                 /**
                  * Touch the file so that Lucene Directory handles lifecycle for this file after
                  * segment merges
                  */
-                data = state.directory.createOutput(IndexFileNames.segmentFileName(
-                        state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion, "hnsw"), state.context);
-                data.close();
+//                data = state.directory.createOutput(IndexFileNames.segmentFileName(
+//                        state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion, "hnswtmp"), state.context);
+//                data.close();
 
                 KNNCodec.Pair pair = KNNCodec.getFloats(values);
                 AccessController.doPrivileged(
                         new PrivilegedAction<Void>() {
                             public Void run() {
-                                KNNIndex.saveIndex(pair.docs, pair.vectors, indexPath);
+                                KNNIndex.saveIndex(pair.docs, pair.vectors, indexPath + "tmp");
                                 return null;
                             }
                         }
@@ -99,20 +94,28 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
                 /**
                  * Add Footer here
                  */
-                try (OutputStream outputStream = Files.newOutputStream(Paths.get(indexPath), StandardOpenOption.APPEND);
-                OutputStreamIndexOutput oStream = new OutputStreamIndexOutput(indexPath, "append_footer", outputStream, 1000)) {
-                    oStream.writeInt(-1);
-                    CodecUtil.writeFooter(oStream);
-                } catch (IOException ex) {
-                    logger.error(ex.getMessage(), ex);
+                String prefix =  String.format("%s_%s",state.segmentInfo.name , NmsLibVersion.LATEST.buildVersion);
+
+                try(IndexInput is = state.directory.openInput(prefix+KNNCodec.HNSW_EXTENSION+"tmp", state.context);
+                IndexOutput os = state.directory.createOutput(prefix+KNNCodec.HNSW_EXTENSION, state.context)) {
+                    os.copyBytes(is, is.length());
+                    CodecUtil.writeFooter(os);
+                } finally {
+                    IOUtils.deleteFilesIgnoringExceptions(state.directory, indexPath+"tmp");
                 }
+
+
+//                try (OutputStream outputStream = Files.newOutputStream(Paths.get(indexPath), StandardOpenOption.APPEND);
+//                OutputStreamIndexOutput oStream = new OutputStreamIndexOutput(indexPath, "append_footer", outputStream, 1000)) {
+////                    oStream.writeInt(-1);
+//                    CodecUtil.writeFooter(oStream);
+//                } catch (IOException ex) {
+//                    logger.error(ex.getMessage(), ex);
+//                }
             } catch(Exception ex) {
                 logger.error("[KNN] " + ex);
-                if(null != data) {
-                    data.close();
                 }
             }
-        }
     }
 
     /**
