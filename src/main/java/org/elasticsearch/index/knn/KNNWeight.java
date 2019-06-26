@@ -104,7 +104,7 @@ public class KNNWeight extends Weight {
                                                     "from cache and possible gc. Trying to read again");
                                 index = knnIndexCache.getIndex(indexPath.toString());
                             }
-                            return index.queryIndex(knnQuery.getQueryVector(), knnQuery.getK());
+                            return index != null ? index.queryIndex(knnQuery.getQueryVector(), knnQuery.getK()) : null;
                         }
                     }
             );

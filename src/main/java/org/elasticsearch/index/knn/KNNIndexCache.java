@@ -60,8 +60,8 @@ public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasa
                                  ,removalNotification.getRemovalReason());
             KNNIndex knnIndex = removalNotification.getValue();
             knnIndex.gc();
-            // This flag is to ensure, callers already holding the object do not query if the flag
-            // is set
+            // This flag is to ensure, callers already holding the object do not query if index
+            // is deleted
             knnIndex.isDeleted = true;
         } catch(Exception ex) {
             logger.error("Exception occured while performing gc for hnsw index " + removalNotification.getKey());
@@ -74,7 +74,6 @@ public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasa
         cache.put(key, value);
     }
 
-
     public KNNIndex getIndex(String key) {
         try {
             return cache.computeIfAbsent(key, indexPathUrl -> computeIndex(indexPathUrl));
@@ -83,7 +82,6 @@ public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasa
         }
         return null;
     }
-
 
     public KNNIndex computeIndex(String indexPathUrl) throws Exception {
         if(Strings.isNullOrEmpty(indexPathUrl))

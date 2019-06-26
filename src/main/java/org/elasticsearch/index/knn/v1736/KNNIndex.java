@@ -30,8 +30,6 @@ import java.io.File;
  * See <a href="https://github.com/nmslib/nmslib/tree/v1.7.3.6">tag1.7.3.6</a>
  */
 public class KNNIndex {
-
-    public static KNNIndexCache knnIndexCache = new KNNIndexCache();
     public static NmsLibVersion VERSION = NmsLibVersion.V1736;
     static {
         System.loadLibrary(NmsLibVersion.V1736.indexLibraryVersion());
