@@ -33,7 +33,6 @@ public final class KNNIndexFileListener implements FileChangesListener {
         } catch (IOException e) {
             logger.error("couldn't initialize resource watcher for file " + filePath.toString(), e);
         }
-
         logger.debug("[KNN] Registered file {}", filePath.toString());
     }
 
