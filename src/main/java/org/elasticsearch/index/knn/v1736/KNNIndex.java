@@ -31,18 +31,18 @@ import java.io.File;
  */
 public class KNNIndex {
 
-    private static Logger logger = LogManager.getLogger(KNNIndex.class);
-
-    private long index;
-    private long indexSize;
-
-    static KNNIndexCache knnIndexCache = new KNNIndexCache();
+    public static KNNIndexCache knnIndexCache = new KNNIndexCache();
     public static NmsLibVersion VERSION = NmsLibVersion.V1736;
     static {
         System.loadLibrary(NmsLibVersion.V1736.indexLibraryVersion());
     }
 
+    private static Logger logger = LogManager.getLogger(KNNIndex.class);
+
     public boolean isDeleted = false;
+
+    private long index;
+    private long indexSize;
 
     public long getIndex() {
         return index;
@@ -73,7 +73,7 @@ public class KNNIndex {
         if(!Strings.isNullOrEmpty(indexPath)) {
             File file = new File(indexPath);
             if (!file.exists() || !file.isFile()) {
-                logger.info("File deleted. Skipping " + indexPath);
+                logger.debug("File {} deleted. Skipping ", indexPath);
                 setIndexSize(0);
             } else {
                 setIndexSize(file.length());
@@ -94,7 +94,9 @@ public class KNNIndex {
     public static KNNIndex loadIndex(String indexPath) {
         KNNIndex index = new KNNIndex();
         index.init(indexPath);
-        index.computeWeight(indexPath);
+        if(KNNIndexCache.weightCircuitBreakerEnabled)
+            // File size is treated as weight
+            index.computeWeight(indexPath);
         return index;
     }
 
