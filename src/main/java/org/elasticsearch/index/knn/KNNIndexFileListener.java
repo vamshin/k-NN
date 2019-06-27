@@ -9,6 +9,10 @@ import org.elasticsearch.watcher.ResourceWatcherService;
 import java.io.IOException;
 import java.nio.file.Path;
 
+/**
+ * File Listener class to perform hsnw index garbage collection when the corresponding
+ * segments get deleted
+ */
 public final class KNNIndexFileListener implements FileChangesListener {
     private static Logger logger = LogManager.getLogger(KNNIndexFileListener.class);
 
@@ -27,15 +31,14 @@ public final class KNNIndexFileListener implements FileChangesListener {
             resourceWatcherService.add(watcher, ResourceWatcherService.Frequency.HIGH);
 
         } catch (IOException e) {
-            logger.error("couldn't initialize ..... ", e);
+            logger.error("couldn't initialize resource watcher for file " + filePath.toString(), e);
         }
-
-        logger.info("Registered...." + filePath.toString());
+        logger.debug("[KNN] Registered file {}", filePath.toString());
     }
 
     @Override
     public void onFileDeleted(Path indexFilePath) {
-        logger.info("[KNN] Invalidated becase file deleted" + indexFilePath.toString());
-        KNNIndexCache.cache.invalidate(indexFilePath.toString());
+        logger.debug("[KNN] Invalidated because file {} is deleted", indexFilePath.toString());
+        KNNWeight.knnIndexCache.cache.invalidate(indexFilePath.toString());
     }
 }

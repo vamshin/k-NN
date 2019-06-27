@@ -42,7 +42,6 @@ import org.elasticsearch.search.sort.ScoreSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.elasticsearch.test.hamcrest.ElasticsearchAssertions;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -269,7 +268,6 @@ public class KNNMapperSearcherIT extends ESIntegTestCase {
         ElasticsearchAssertions.assertHitCount(searchResponse, k);
     }
 
-    @Ignore
     public void testKNNResultsWithDeleteDoc() throws Exception {
         createKnnIndex("testindex");
         addTestData();

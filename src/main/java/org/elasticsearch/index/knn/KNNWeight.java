@@ -51,7 +51,7 @@ public class KNNWeight extends Weight {
     private final KNNQuery knnQuery;
     private final float boost;
 
-    private static KNNIndexCache knnIndexCache = new KNNIndexCache();
+    public static KNNIndexCache knnIndexCache = new KNNIndexCache();
 
     public KNNWeight(KNNQuery query, float boost) {
         super(query);
@@ -79,12 +79,11 @@ public class KNNWeight extends Weight {
              */
             String hnswFileExtension = reader.getSegmentInfo().info.getUseCompoundFile()
                                                ? KNNCodec.HNSW_COMPUND_EXTENSION : KNNCodec.HNSW_EXTENSION;
-            List<String> hnswFile = reader.getSegmentInfo().files().stream().filter(fileName -> fileName.endsWith(hnswFileExtension))
+            List<String> hnswFiles = reader.getSegmentInfo().files().stream().filter(fileName -> fileName.endsWith(hnswFileExtension))
                                           .collect(Collectors.toList());
 
-            //TODO empty check and assert.
             // Able to proceed further if the corresponding hnsw index does not present
-            if(hnswFile.size() != 1) {
+            if(hnswFiles.size() != 1) {
                 throw new IllegalStateException("More than one hnsw extension for the segment: "
                                                         + reader.getSegmentName());
             }
@@ -95,25 +94,19 @@ public class KNNWeight extends Weight {
              * So defering this to future release
              */
 
-
-            Path indexPath = PathUtils.get(directory, hnswFile.get(0));
-
-
-
-//           IndexInput indexInput = reader.directory().openInput(hnswFile.get(0), IOContext.DEFAULT);
-//            CodecUtil.retrieveChecksum(indexInput);
-
-
+            Path indexPath = PathUtils.get(directory, hnswFiles.get(0));
             KNNQueryResult[] results = AccessController.doPrivileged(
                     new PrivilegedAction<KNNQueryResult[]>() {
                         public KNNQueryResult[] run() {
                             KNNIndex index = knnIndexCache.getIndex(indexPath.toString());
-                            if(index.isDeleted) {
+                            if(index.isDeleted.get()) {
                                 // Race condition occured. Looks like entry got evicted from cache and
                                 // possibly gc. Try to read again
+                                logger.info("[KNN] Race condition occured. Looks like entry got evicted " +
+                                                    "from cache and possible gc. Trying to read again");
                                 index = knnIndexCache.getIndex(indexPath.toString());
                             }
-                            return index.queryIndex(knnQuery.getQueryVector(), knnQuery.getK());
+                            return index != null ? index.queryIndex(knnQuery.getQueryVector(), knnQuery.getK()) : null;
                         }
                     }
             );
@@ -127,7 +120,8 @@ public class KNNWeight extends Weight {
             int maxDoc = Collections.max(scores.keySet()) + 1;
             DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(maxDoc);
             DocIdSetBuilder.BulkAdder setAdder = docIdSetBuilder.grow(maxDoc);
-            Arrays.stream(results).forEach(result -> setAdder.add(result.getId()));
+            if(results != null)
+                Arrays.stream(results).forEach(result -> setAdder.add(result.getId()));
             DocIdSetIterator docIdSetIter = docIdSetBuilder.build().iterator();
             return new KNNScorer(this, docIdSetIter, scores, boost);
         } catch (Exception e) {

@@ -17,7 +17,6 @@ package org.elasticsearch.index.knn;
 
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-//import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 
 import java.io.IOException;
