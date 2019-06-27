@@ -23,6 +23,7 @@ import org.elasticsearch.index.knn.util.NmsLibVersion;
 import org.elasticsearch.index.knn.KNNIndexCache;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * JNI layer to communicate with the nmslib
@@ -37,7 +38,7 @@ public class KNNIndex {
 
     private static Logger logger = LogManager.getLogger(KNNIndex.class);
 
-    public boolean isDeleted = false;
+    public AtomicBoolean isDeleted = new AtomicBoolean(false);
 
     private long index;
     private long indexSize;

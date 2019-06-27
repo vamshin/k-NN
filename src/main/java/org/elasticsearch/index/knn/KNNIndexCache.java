@@ -14,12 +14,16 @@ import org.elasticsearch.index.knn.v1736.KNNIndex;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.ToLongBiFunction;
 
 /**
  * KNNIndex level caching with weight based, time based evictions
  */
 public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasable {
+
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private static Logger logger = LogManager.getLogger(KNNIndexCache.class);
     private static KNNIndexFileListener knnIndexFileListener = null;
@@ -50,7 +54,8 @@ public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasa
 
     @Override
     public void close() {
-        cache.invalidateAll();
+        executor.execute(() -> cache.invalidateAll());
+        executor.shutdown();
     }
 
     @Override
@@ -59,10 +64,10 @@ public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasa
             logger.debug("[KNN] Cache evicted. Key {}, Reason: {}", removalNotification.getKey()
                                  ,removalNotification.getRemovalReason());
             KNNIndex knnIndex = removalNotification.getValue();
-            knnIndex.gc();
+            executor.execute(() -> knnIndex.gc());
             // This flag is to ensure, callers already holding the object do not query if index
             // is deleted
-            knnIndex.isDeleted = true;
+            knnIndex.isDeleted.set(true);
         } catch(Exception ex) {
             logger.error("Exception occured while performing gc for hnsw index " + removalNotification.getKey());
         }

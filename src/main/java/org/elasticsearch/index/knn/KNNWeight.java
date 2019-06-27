@@ -97,7 +97,7 @@ public class KNNWeight extends Weight {
                     new PrivilegedAction<KNNQueryResult[]>() {
                         public KNNQueryResult[] run() {
                             KNNIndex index = knnIndexCache.getIndex(indexPath.toString());
-                            if(index.isDeleted) {
+                            if(index.isDeleted.get()) {
                                 // Race condition occured. Looks like entry got evicted from cache and
                                 // possibly gc. Try to read again
                                 logger.info("[KNN] Race condition occured. Looks like entry got evicted " +
