@@ -29,4 +29,4 @@ export GRADLE_USER_HOME="$ws_root/env/.gradle_user_home"
 export TERM=${TERM:-dumb}
 
 GRADLE=$(which gradle)
-$GRADLE  build --stacktrace "$@"
+$GRADLE  build -x :integTestRunner --stacktrace "$@"
