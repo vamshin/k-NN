@@ -82,10 +82,10 @@ public class KNNWeight extends Weight {
             List<String> hnswFiles = reader.getSegmentInfo().files().stream().filter(fileName -> fileName.endsWith(hnswFileExtension))
                                           .collect(Collectors.toList());
 
-            // Able to proceed further if the corresponding hnsw index does not present
-            if(hnswFiles.size() != 1) {
-                throw new IllegalStateException("More than one hnsw extension for the segment: "
-                                                        + reader.getSegmentName());
+            if(hnswFiles.isEmpty()) {
+                logger.debug("[KNN] No hsnw index found for field {} for segment {}",
+                        knnQuery.getField(), reader.getSegmentName());
+                return null;
             }
 
             /**
@@ -111,17 +111,18 @@ public class KNNWeight extends Weight {
                     }
             );
 
-            Map<Integer, Float> scores = Collections.emptyMap();
-            if (results != null) {
-                scores = Arrays.stream(results).collect(
-                        Collectors.toMap(result -> result.getId(), result -> result.getScore()));
+            if (results == null) {
+                logger.debug("No results for field {} for segment {}",
+                        knnQuery.getField(), reader.getSegmentName());
+                return  null;
             }
 
+            Map<Integer, Float> scores = Arrays.stream(results).collect(
+                    Collectors.toMap(result -> result.getId(), result -> result.getScore()));
             int maxDoc = Collections.max(scores.keySet()) + 1;
             DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(maxDoc);
             DocIdSetBuilder.BulkAdder setAdder = docIdSetBuilder.grow(maxDoc);
-            if(results != null)
-                Arrays.stream(results).forEach(result -> setAdder.add(result.getId()));
+            Arrays.stream(results).forEach(result -> setAdder.add(result.getId()));
             DocIdSetIterator docIdSetIter = docIdSetBuilder.build().iterator();
             return new KNNScorer(this, docIdSetIter, scores, boost);
         } catch (Exception e) {

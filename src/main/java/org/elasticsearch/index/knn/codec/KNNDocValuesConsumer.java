@@ -47,6 +47,7 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
 
     private final Logger logger = LogManager.getLogger(KNNDocValuesConsumer.class);
 
+    private final String TEMP_SUFFIX = "tmp";
     private DocValuesConsumer delegatee;
     private SegmentWriteState state;
 
@@ -64,58 +65,53 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
             /**
              * We always write with latest NMS library version
              */
-            if(!isNmsLibLatest()) {
+            if (!isNmsLibLatest()) {
                 throw new IllegalStateException("Nms library version mismatch. Correct version: "
                                                         + NmsLibVersion.LATEST.indexLibraryVersion());
             }
 
             BinaryDocValues values = valuesProducer.getBinary(field);
             String indexPath = Paths.get(((FSDirectory) (FilterDirectory.unwrap(state.directory))).getDirectory().toString(),
-                    String.format("%s_%s.hnsw", state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion)).toString();
-            try {
-                /**
-                 * Touch the file so that Lucene Directory handles lifecycle for this file after
-                 * segment merges
-                 */
-//                data = state.directory.createOutput(IndexFileNames.segmentFileName(
-//                        state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion, "hnswtmp"), state.context);
-//                data.close();
+                    String.format("%s_%s_%s.hnsw", state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion, field.name)).toString();
 
-                KNNCodec.Pair pair = KNNCodec.getFloats(values);
-                AccessController.doPrivileged(
-                        new PrivilegedAction<Void>() {
-                            public Void run() {
-                                KNNIndex.saveIndex(pair.docs, pair.vectors, indexPath + "tmp");
-                                return null;
-                            }
-                        }
-                );
-
-                /**
-                 * Add Footer here
-                 */
-                String prefix =  String.format("%s_%s",state.segmentInfo.name , NmsLibVersion.LATEST.buildVersion);
-
-                try(IndexInput is = state.directory.openInput(prefix+KNNCodec.HNSW_EXTENSION+"tmp", state.context);
-                IndexOutput os = state.directory.createOutput(prefix+KNNCodec.HNSW_EXTENSION, state.context)) {
-                    os.copyBytes(is, is.length());
-                    CodecUtil.writeFooter(os);
-                } finally {
-                    IOUtils.deleteFilesIgnoringExceptions(state.directory, indexPath+"tmp");
-                }
-
-
-//                try (OutputStream outputStream = Files.newOutputStream(Paths.get(indexPath), StandardOpenOption.APPEND);
-//                OutputStreamIndexOutput oStream = new OutputStreamIndexOutput(indexPath, "append_footer", outputStream, 1000)) {
-////                    oStream.writeInt(-1);
-//                    CodecUtil.writeFooter(oStream);
-//                } catch (IOException ex) {
-//                    logger.error(ex.getMessage(), ex);
-//                }
-            } catch(Exception ex) {
-                logger.error("[KNN] " + ex);
-                }
+            KNNCodec.Pair pair = KNNCodec.getFloats(values);
+            if (pair == null || pair.vectors.length == 0 || pair.docs.length == 0) {
+                logger.info("Skipping hnsw index creation as there are no vectors or docs in the documents");
+                return;
             }
+
+            // Pass the path for the nms library to save the file
+            String tempIndexPath = indexPath + TEMP_SUFFIX;
+            AccessController.doPrivileged(
+                    new PrivilegedAction<Void>() {
+                        public Void run() {
+                            KNNIndex.saveIndex(pair.docs, pair.vectors, tempIndexPath);
+                            return null;
+                        }
+                    }
+            );
+
+            String hnswFileName = String.format("%s_%s_%s%s", state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion,
+                    field.name, KNNCodec.HNSW_EXTENSION);
+            String hsnwTempFileName = hnswFileName + TEMP_SUFFIX;
+
+            /**
+             * Adds Footer to the serialized graph
+             * 1. Copies the serialized graph to new file.
+             * 2. Adds Footer to the new file.
+             *
+             * We had to create new file here becuase adding footer directly to the
+             * existing file will miss calculating checksum for the serialized graph
+             * bytes and result in index corruption issues.
+             */
+            try (IndexInput is = state.directory.openInput(hsnwTempFileName, state.context);
+                 IndexOutput os = state.directory.createOutput(hnswFileName, state.context)) {
+                os.copyBytes(is, is.length());
+                CodecUtil.writeFooter(os);
+            } finally {
+                IOUtils.deleteFilesIgnoringExceptions(state.directory, hsnwTempFileName);
+            }
+        }
     }
 
     /**
