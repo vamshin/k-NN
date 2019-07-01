@@ -112,6 +112,8 @@ dependencies {
     testImplementation "org.elasticsearch.test:framework:${es_version}"
 }
 
+checkstyleMain.enabled = false
+checkstyleTest.enabled = false
 licenseHeaders.enabled = false
 dependencyLicenses.enabled = false
 thirdPartyAudit.enabled = false
