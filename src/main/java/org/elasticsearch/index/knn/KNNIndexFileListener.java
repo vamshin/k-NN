@@ -13,7 +13,7 @@ import java.nio.file.Path;
  * File Listener class to perform hsnw index garbage collection when the corresponding
  * segments get deleted
  */
-public final class KNNIndexFileListener implements FileChangesListener {
+public class KNNIndexFileListener implements FileChangesListener {
     private static Logger logger = LogManager.getLogger(KNNIndexFileListener.class);
 
     private ResourceWatcherService resourceWatcherService;
