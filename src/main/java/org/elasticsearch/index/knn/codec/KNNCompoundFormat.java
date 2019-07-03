@@ -30,13 +30,9 @@ public class KNNCompoundFormat extends CompoundFormat {
 
     @Override
     public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
-//        String prefix =  String.format("%s_%s",si.name , NmsLibVersion.LATEST.buildVersion);
-//        Strings hnswFile = prefix + KNNCodec.HNSW_EXTENSION;
-
         /**
          * If hnsw file present, remove it from compounding file.
-         * We do not add header/footer to hnsw because of nmslib constraints. Compounding file expects
-         * each format to present the header/footer and it fails. So we are removing from Compounding
+         * We do not add header to hnsw because of nmslib constraints.
          */
         Set<String> hnswFiles = si.files().stream().filter(file -> file.endsWith(KNNCodec.HNSW_EXTENSION))
                                      .collect(Collectors.toSet());
@@ -47,33 +43,11 @@ public class KNNCompoundFormat extends CompoundFormat {
         if(!hnswFiles.isEmpty()) {
             for(String hnswFile: hnswFiles) {
                 String hnswCompoundFile = hnswFile + "c";
-//                String hnswCompoundFile = prefix + KNNCodec.HNSW_COMPUND_EXTENSION;
                 dir.copyFrom(dir, hnswFile, hnswCompoundFile, context);
             }
-
             segmentFiles.removeAll(hnswFiles);
             si.setFiles(segmentFiles);
         }
-
-//        si.setFiles(si.files() - segmentFiles);
-
-        /**
-         *  Segment files find strings with substring hnsw. Create corresponding compound files
-         */
-//        if(segmentFiles.contains(hnswFile)) {
-//            segmentFiles.remove(hnswFile);
-//            si.setFiles(segmentFiles);
-//
-//            /**
-//             * After compouding, the original segment files are deleted.  As part of this .hnsw file
-//             * will also be deleted. So We create new file format with ".hnswc" extension as a compound file
-//             * for hnsw.
-//             */
-//            String hnswCompoundFile = prefix + KNNCodec.HNSW_COMPUND_EXTENSION;
-//            dir.copyFrom(dir, hnswFile, hnswCompoundFile, context);
-//        } else {
-//            logger.info("[KNN] hnsw file not present for segment %s. Ignoring hnswc", hnswFile);
-//        }
         Codec.getDefault().compoundFormat().write(dir, si, context);
     }
 }

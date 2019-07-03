@@ -79,7 +79,9 @@ public class KNNWeight extends Weight {
              */
             String hnswFileExtension = reader.getSegmentInfo().info.getUseCompoundFile()
                                                ? KNNCodec.HNSW_COMPUND_EXTENSION : KNNCodec.HNSW_EXTENSION;
-            List<String> hnswFiles = reader.getSegmentInfo().files().stream().filter(fileName -> fileName.endsWith(hnswFileExtension))
+            String hnswSuffix = knnQuery.getField() + hnswFileExtension;
+            List<String> hnswFiles = reader.getSegmentInfo().files().stream()
+                                           .filter(fileName -> fileName.endsWith(hnswSuffix))
                                           .collect(Collectors.toList());
 
             if(hnswFiles.isEmpty()) {
@@ -89,9 +91,9 @@ public class KNNWeight extends Weight {
             }
 
             /**
-             * Add logic to pick up the right nmslib version based on the version
+             * TODO Add logic to pick up the right nmslib version based on the version
              * in the name of the file. As of now we have one version 1.7.3.6.
-             * So defering this to future release
+             * So deferring this to future releases
              */
 
             Path indexPath = PathUtils.get(directory, hnswFiles.get(0));
