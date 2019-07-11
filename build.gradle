@@ -15,24 +15,16 @@
 
 buildscript {
     ext {
-        es_version = project.property("es.version")
+        es_version = System.getProperty("es.version", "7.1.1")
         es_group = "org.elasticsearch"
-        offlineRepositoryRoot = rootProject.file("${rootDir.parentFile}/offline-repo").absolutePath
-        es_distribution = 'oss-zip'
-        distribution = es_distribution
+        distribution = 'oss-zip'
     }
-
-    apply from: 'build-tools/amazon-sandbox.gradle'
-    apply from: 'build-tools/repositories.gradle'
 
     // This isn't applying from repositories.gradle so repeating it here
     repositories {
-        if (sandboxedBuild) {
-            maven { url offlineRepositoryRoot }
-        } else {
-            mavenCentral()
-            maven { url "https://plugins.gradle.org/m2/" }
-        }
+        mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" }
+        jcenter()
     }
 
     dependencies {
@@ -52,9 +44,15 @@ plugins {
     id 'nebula.ospackage' version "5.3.0" apply false
 }
 
+ext {
+    opendistroVersion = '1.1.0'
+    isSnapshot = "true" == System.getProperty("build.snapshot", "true")
+}
+
+
 allprojects {
     group = 'com.amazon.opendistroforelasticsearch'
-    version = "${es_version}"
+    version = "${opendistroVersion}.0"
 
     apply from: 'build-tools/repositories.gradle'
     plugins.withId('java') {
@@ -62,10 +60,9 @@ allprojects {
     }
 }
 
-apply from: 'build-tools/brazil.gradle'
 apply plugin: 'elasticsearch.esplugin'
-
-apply from: 'build-tools/prepare-offline-repo.gradle'
+apply plugin: 'jacoco'
+apply from: 'build-tools/knnplugin-coverage.gradle'
 
 ext {
     projectSubstitutions = [:]
@@ -123,7 +120,7 @@ es_tmp_dir.mkdirs()
 integTestRunner {
     systemProperty 'tests.security.manager', 'false'
     systemProperty 'java.io.tmpdir', es_tmp_dir.absolutePath
-    distribution = es_distribution
+    distribution = "oss-zip"
 
     // Tell the test JVM if the cluster JVM is running under a debugger so that tests can use longer timeouts for
     // requests. The 'doFirst' delays reading the debug setting on the cluster till execution time.
@@ -140,12 +137,12 @@ integTestRunner {
 }
 
 integTestCluster {
-    distribution = es_distribution
+    distribution = "oss-zip"
     systemProperty "java.library.path", "$rootDir/buildSrc"
 }
 
 run {
-    distribution = es_distribution
+    distribution = "oss-zip"
     systemProperty "java.library.path", "$rootDir/buildSrc"
 }
 
@@ -159,4 +156,53 @@ forbiddenApis.ignoreFailures = true
 // enable testingConventions check will cause errors like:  "Classes ending with [Tests] must subclass [LuceneTestCase]"
 testingConventions.enabled = false
 
+apply plugin: 'nebula.ospackage'
 
+// This is afterEvaluate because the bundlePlugin ZIP task is updated afterEvaluate and changes the ZIP name to match the plugin name
+afterEvaluate {
+    ospackage {
+        packageName = "${name}"
+        release = isSnapshot ? "0.1" : '1'
+        version = "${project.version}" - "-SNAPSHOT"
+
+        into '/usr/share/elasticsearch/plugins'
+        from(zipTree(bundlePlugin.archivePath)) {
+            into esplugin.name
+        }
+
+        user 'root'
+        permissionGroup 'root'
+        fileMode 0644
+        dirMode 0755
+
+        requires('elasticsearch-oss', versions.elasticsearch, EQUAL)
+        packager = 'Amazon'
+        vendor = 'Amazon'
+        os = 'LINUX'
+        prefix '/usr'
+
+        license 'ASL-2.0'
+        maintainer 'OpenDistro for Elasticsearch Team <opendistro@amazon.com>'
+        url 'https://opendistro.github.io/elasticsearch/downloads'
+        summary '''
+         KNN plugin for OpenDistro for Elasticsearch. 
+         Reference documentation can be found at https://opendistro.github.io/for-elasticsearch-docs/.
+    '''.stripIndent().replace('\n', ' ').trim()
+    }
+
+    buildRpm {
+        arch = 'NOARCH'
+        archiveName "${packageName}-${version}.rpm"
+        dependsOn 'assemble'
+    }
+
+    buildDeb {
+        arch = 'amd64'
+        archiveName "${packageName}-${version}.deb"
+        dependsOn 'assemble'
+    }
+
+    task buildPackages(type: GradleBuild) {
+        tasks = ['build', 'buildRpm', 'buildDeb']
+    }
+}
