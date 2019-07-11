@@ -119,8 +119,14 @@ public class KNNWeight extends Weight {
                 return  null;
             }
 
+            /**
+             * Scores represent the distance of the documents with respect to given query vector.
+             * Lesser the score, the closer the document is to the query vector.
+             * Since by default results are retrieved in the descending order of scores, to get the nearest
+             * neighbors we are inverting the scores.
+             */
             Map<Integer, Float> scores = Arrays.stream(results).collect(
-                    Collectors.toMap(result -> result.getId(), result -> result.getScore()));
+                    Collectors.toMap(result -> result.getId(), result -> result.getScore()==0.0f ? Integer.MAX_VALUE : 1/result.getScore()));
             int maxDoc = Collections.max(scores.keySet()) + 1;
             DocIdSetBuilder docIdSetBuilder = new DocIdSetBuilder(maxDoc);
             DocIdSetBuilder.BulkAdder setAdder = docIdSetBuilder.grow(maxDoc);

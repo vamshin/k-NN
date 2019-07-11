@@ -181,13 +181,13 @@ public class KNNMapperSearcherIT extends ESIntegTestCase {
         /**
          * Query params
          */
-        float[] queryVector = {1.0f, 1.0f}; // vector to be queried
+        float[] queryVector = {2.0f, 2.0f}; // vector to be queried
         int k = 3; //nearest 3 neighbors
         KNNQueryBuilder knnQueryBuilder = new KNNQueryBuilder("my_vector", queryVector, k);
 
         SearchResponse searchResponse;
 
-        searchResponse = searchKNNIndexWithSortAsc("testindex", k, knnQueryBuilder);
+        searchResponse = searchKNNIndex("testindex", k, knnQueryBuilder);
         List<String> expectedDocids = Arrays.asList("2", "4", "3");
 
         List<String> actualDocids = new ArrayList<>();

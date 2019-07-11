@@ -8,4 +8,3 @@ build/
 offline-repo.zip
 *.log
 out/
-buildSrc/es-knn-offline-repo-*

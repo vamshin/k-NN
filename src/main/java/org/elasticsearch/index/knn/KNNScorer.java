@@ -19,6 +19,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -46,6 +47,11 @@ public class KNNScorer extends Scorer {
     @Override
     public DocIdSetIterator iterator() {
         return docIdsIter;
+    }
+
+    @Override
+    public float getMaxScore(int upTo) throws IOException {
+        return 1.0f/0.0f;
     }
 
     @Override
