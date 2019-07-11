@@ -23,19 +23,14 @@ import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.ScoreSortBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.test.ESIntegTestCase;
 import org.elasticsearch.test.hamcrest.ElasticsearchAssertions;
 
@@ -116,20 +111,6 @@ public class KNNMapperSearcherIT extends ESIntegTestCase {
                                                  .setSize(resultSize)
                                                  .setExplain(true)
                                                  .get();
-        assertEquals(searchResponse.status(), RestStatus.OK);
-        return searchResponse;
-    }
-
-    private SearchResponse searchKNNIndexWithSortAsc(String index, int resultSize, KNNQueryBuilder knnQueryBuilder) {
-        logger.info("Searching KNN index " + index );
-        SearchRequest searchRequest = new SearchRequest(index);
-        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        sourceBuilder.query(knnQueryBuilder);
-        sourceBuilder.size(resultSize);
-        sourceBuilder.timeout(new TimeValue(60, TimeUnit.SECONDS));
-        sourceBuilder.sort(new ScoreSortBuilder().order(SortOrder.ASC));
-        searchRequest.source(sourceBuilder);
-        SearchResponse searchResponse = client().search(searchRequest).actionGet();
         assertEquals(searchResponse.status(), RestStatus.OK);
         return searchResponse;
     }
