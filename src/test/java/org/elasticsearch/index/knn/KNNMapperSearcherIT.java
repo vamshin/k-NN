@@ -191,7 +191,7 @@ public class KNNMapperSearcherIT extends ESIntegTestCase {
 
         SearchResponse searchResponse;
 
-        searchResponse = searchKNNIndexWithSortAsc("testindex", k, knnQueryBuilder);
+        searchResponse = searchKNNIndex("testindex", k, knnQueryBuilder);
         List<String> expectedDocids = Arrays.asList("2", "4", "3");
 
         List<String> actualDocids = new ArrayList<>();
