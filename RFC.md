@@ -11,21 +11,25 @@ Open Distro for Elasticsearch enables you to run nearest neighbor search on bill
 Open Distro for Elasticsearch uses Non-Metric Space Library (NMSLIB), a highly efficient implementation of k-NN, which has consistently out-performed most of the other solutions as per the ANN-Benchmarks published here. The solution has extended Lucene codec to introduce a separate file format for storing k-NN indices to deliver high efficiency k-NN search operations on Elasticsearch.
 
 * Essentially, the KNN feature is powered by 4 customizations to Elasticsearch:
-    * Mapper plugin (https://www.elastic.co/guide/en/elasticsearch/plugins/current/mapper.html)_ to support new field type, ‘knn_vector’ to represent the vector fields in a document.
-    * Lucene Codec (https://www.elastic.co/blog/what-is-an-apache-lucene-codec)_ named ‘KNNCodec’ which adds a new _Lucene index file (https://lucene.apache.org/core/7_1_0/core/org/apache/lucene/codecs/lucene70/package-summary.html)_ format for storing and retrieving the vectors in nmslib using a JNI layer.
-    * Search plugin (https://static.javadoc.io/org.elasticsearch/elasticsearch/6.0.1/org/elasticsearch/plugins/SearchPlugin.html)_ which introduces a query clause called ‘knn’ for processing the KNN query elements.
-    * Action plugin_ (https://static.javadoc.io/org.elasticsearch/elasticsearch/6.0.1/org/elasticsearch/plugins/ActionPlugin.html)  to utilize Elasticsearch ResourceWatcher service for effective garbage collection management of hnsw indices
+    * [Mapper plugin](https://www.elastic.co/guide/en/elasticsearch/plugins/current/mapper.html) to support new field type, ```knn_vector``` to represent the vector fields in a document.
 
-Highly scalable
+    * [Lucene Codec](https://www.elastic.co/blog/what-is-an-apache-lucene-codec) named ‘KNNCodec’ which adds a new Lucene index file format for storing and retrieving the vectors in nmslib using a JNI layer.
+
+    * [Search plugin](https://static.javadoc.io/org.elasticsearch/elasticsearch/7.1.1/org/elasticsearch/plugins/SearchPlugin.html) which introduces a query clause called ```knn``` for processing the KNN query elements.
+
+    * [Action plugin](https://static.javadoc.io/org.elasticsearch/elasticsearch/7.1.1/org/elasticsearch/plugins/ActionPlugin.html) to utilize Elasticsearch ResourceWatcher service for effective garbage collection management of hnsw indices
+
+####Highly scalable
 Easily leverage Elasticsearch’s distributed architecture to run high-scale k-NN search operations.  Unlike many of the common k-NN solutions, Open Distro for Elasticsearch does not use a brute-force approach to compute k-NN during the search operation, which causes exponential degradation in performance with scale. Instead, the solution indexes the k-NN data efficiently, enabling you to attain low latency even at high scale.
 
-Run k-NN using familiar Elasticsearch constructs
+####Run k-NN using familiar Elasticsearch constructs
 k-NN on Open Distro for Elasticsearch uses the familiar mapping and query syntax of Elasticsearch. To designate a field as a k-NN vector you simply need to map it to the new k-NN field type provided by the mapper plugin. You can then invoke k-NN search operations using the search plugin with the familiar Elasticsearch query syntax.
 
-Combine with other Elasticsearch features
+####Combine with other Elasticsearch features
 k-NN functionality integrates seamlessly with other Elasticsearch features. This provides you the flexibility to use Elasticsearch’s extensive search features such as aggregations and filtering with k-NN to further slice and dice your data to increase the precision of your searches.
 
 ## Usage
+KNN indices need ```KNNCodec``` to write and read hnsw indices created part of each segment for a shard. Please find below example to create knn index
 
 ### Creating K-NN index
 ``` JSON
@@ -40,7 +44,8 @@ PUT /myindex
     "my_images": {
       "properties": {
         "my_vector1": {
-          "type": "knn_vector"
+          "type": "knn_vector",
+
         },
         "my_vector2": {
           "type": "knn_vector"
@@ -52,7 +57,7 @@ PUT /myindex
   }
 }
 
-``` JSON
+```
 
 In the above example, user is creating K-NN index with 3 knn_vector fields namely my_vector1, my_vector2, my_vector3. We could index different
 category of embeddings into these fields and query the nearest neighbors for each field independently.
@@ -92,7 +97,7 @@ POST my_index/_doc/6
   "my_vector3" : [8.5, 9.5, 10.5]
 }
 
-``` JSON
+```
 
 In the above examples, we have indexed 3 vectors
 
@@ -115,10 +120,11 @@ POST localhost:9200/myindex/_search
         { "_score": { "order": "asc" }}
     ]
 }
-``` JSON
+```
 
+## Tuning hnsw algorithm parameters
 
 
 ## Providing Feedback
 
-If you have comments or feedback on our plans for Index Management, please comment on [the RFC Github issue](../../issues/1) in this project to discuss.
+If you have comments or feedback on our plans for KNN plugin, please comment on [the RFC Github issue](../../issues/1) in this project to discuss.
