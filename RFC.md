@@ -58,8 +58,7 @@ PUT /myindex
 }
 
 ```
-
-In the above example, user is creating K-NN index with 3 knn_vector fields namely my_vector1, my_vector2, my_vector3. We could index different
+In the above example, we are creating K-NN index with 3 ```knn_vector``` fields namely my_vector1, my_vector2, my_vector3. We could index different
 category of embeddings into these fields and query the nearest neighbors for each field independently.
 
 ### Indexing vectors
@@ -94,36 +93,99 @@ POST my_index/_doc/5
 
 POST my_index/_doc/6
 {
-  "my_vector3" : [8.5, 9.5, 10.5]
+  "my_vector3" : [8.5, 9.5, 10.5, 14.5, 20.19, 22.42]
 }
-
 ```
 
-In the above examples, we have indexed 3 vectors
+In the above examples, we have indexed 3 vectors of field ```my_vector1```, 2 vectors of field ```my_vector2```, 1 vector of field ```my_vector3```
 
-### Querying K-Nearest Neighbors
+### Indexing different category of embeddings in the same document
 
 ``` JSON
+POST my_index/_doc/7
+{
+  "my_vector1" : [2.5, 4.5],
+  "my_vector2" : [13.5, 14.5, 15.5],
+  "my_vector3" : [8.5, 9.5, 10.5, 7,8]
+}
+```
 
+### Using knn vector fields in combination with other fields
+
+``` JSON
+POST my_index/_doc/8
+{
+  "my_vector2" : [8.5, 9.5, 0.5],
+  "price": 10
+}
+```
+
+
+### Querying K-Nearest Neighbors
+Use the new ```knn``` clause in the query DSL and specify the point of interest as ‘vector’ and the number of
+nearest neighbors to fetch as ```k```.
+
+``` JSON
 POST localhost:9200/myindex/_search
 {
  “size”: 2,
  "query": {
   "knn": {
-   "*my_vector1*": {
+   "my_vector1": {
      "vector": [3, 4],
      "k": 2
    }
   }
- },
- "sort": [
-        { "_score": { "order": "asc" }}
-    ]
+ }
 }
 ```
+#### Output for above query
 
-## Tuning hnsw algorithm parameters
-
+``` JSON
+{
+  "took": 967067,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 4,
+      "relation": "eq"
+    },
+    "max_score": 1.4142135,
+    "hits": [
+      {
+        "_index": "myindex",
+        "_type": "_doc",
+        "_id": "2",
+        "_score": 1.4142135,
+        "_source": {
+          "my_vector1": [
+            2.5,
+            3.5
+          ]
+        }
+      },
+      {
+        "_index": "myindex",
+        "_type": "_doc",
+        "_id": "7",
+        "_score": 1.4142135,
+        "_source": {
+          "my_vector1": [
+            2.5,
+            4.5
+          ]
+        }
+      }
+    ]
+  }
+}
+```
 
 ## Providing Feedback
 
