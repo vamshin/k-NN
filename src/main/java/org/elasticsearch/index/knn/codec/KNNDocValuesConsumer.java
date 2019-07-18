@@ -59,7 +59,10 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
     @Override
     public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
         delegatee.addBinaryField(field, valuesProducer);
+        addKNNBinaryField(field, valuesProducer);
+    }
 
+    public void addKNNBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
         if (field.attributes().containsKey(KNNVectorFieldMapper.KNN_FIELD)) {
 
             /**
@@ -71,8 +74,10 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
             }
 
             BinaryDocValues values = valuesProducer.getBinary(field);
+            String hnswFileName = String.format("%s_%s_%s%s", state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion,
+                    field.name, KNNCodec.HNSW_EXTENSION);
             String indexPath = Paths.get(((FSDirectory) (FilterDirectory.unwrap(state.directory))).getDirectory().toString(),
-                    String.format("%s_%s_%s.hnsw", state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion, field.name)).toString();
+                    hnswFileName).toString();
 
             KNNCodec.Pair pair = KNNCodec.getFloats(values);
             if (pair == null || pair.vectors.length == 0 || pair.docs.length == 0) {
@@ -91,8 +96,6 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
                     }
             );
 
-            String hnswFileName = String.format("%s_%s_%s%s", state.segmentInfo.name, NmsLibVersion.LATEST.buildVersion,
-                    field.name, KNNCodec.HNSW_EXTENSION);
             String hsnwTempFileName = hnswFileName + TEMP_SUFFIX;
 
             /**
@@ -100,7 +103,7 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
              * 1. Copies the serialized graph to new file.
              * 2. Adds Footer to the new file.
              *
-             * We had to create new file here becuase adding footer directly to the
+             * We had to create new file here because adding footer directly to the
              * existing file will miss calculating checksum for the serialized graph
              * bytes and result in index corruption issues.
              */
@@ -128,7 +131,7 @@ class KNNDocValuesConsumer extends DocValuesConsumer implements Closeable {
             for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
                 DocValuesType type = fieldInfo.getDocValuesType();
                 if (type == DocValuesType.BINARY) {
-                    addBinaryField(fieldInfo, new KNNDocValuesProducer(mergeState));
+                    addKNNBinaryField(fieldInfo, new KNNDocValuesReader(mergeState));
                 }
             }
         } catch (Exception e) {

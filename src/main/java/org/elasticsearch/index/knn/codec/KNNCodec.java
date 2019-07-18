@@ -38,8 +38,9 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 
 /**
- * Encodes/Decodes an existing inverted index for the indices
- * using KNNCodec
+ * Extends the Codec to support a new file format for KNN index
+ * based on the mappings.
+ *
  */
 public final class KNNCodec extends Codec {
 
@@ -47,7 +48,7 @@ public final class KNNCodec extends Codec {
     private static final String KNN_CODEC = "KNNCodec";
 
     public static final String HNSW_EXTENSION = ".hnsw";
-    public static final String HNSW_COMPUND_EXTENSION = ".hnswc";
+    public static final String HNSW_COMPOUND_EXTENSION = ".hnswc";
 
     private final DocValuesFormat docValuesFormat;
     private final DocValuesFormat perFieldDocValuesFormat;
@@ -66,7 +67,7 @@ public final class KNNCodec extends Codec {
     }
 
     /*
-     * This function handles the latest Codec supported by current ES version.
+     * This function returns the latest Codec supported by current ES version.
      */
     public Codec getDelegatee() {
         return Codec.getDefault();

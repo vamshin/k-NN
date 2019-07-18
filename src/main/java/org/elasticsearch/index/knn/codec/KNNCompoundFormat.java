@@ -46,8 +46,8 @@ public class KNNCompoundFormat extends CompoundFormat {
     @Override
     public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
         /**
-         * If hnsw file present, remove it from compounding file.
-         * We do not add header to hnsw because of nmslib constraints.
+         * If hnsw file present, remove it from the compounding file list to avoid header/footer checks
+         * and create a new compounding file format with extension .hnswc.
          */
         Set<String> hnswFiles = si.files().stream().filter(file -> file.endsWith(KNNCodec.HNSW_EXTENSION))
                                      .collect(Collectors.toSet());
@@ -55,8 +55,8 @@ public class KNNCompoundFormat extends CompoundFormat {
         Set<String> segmentFiles = new HashSet<>();
         segmentFiles.addAll(si.files());
 
-        if(!hnswFiles.isEmpty()) {
-            for(String hnswFile: hnswFiles) {
+        if (!hnswFiles.isEmpty()) {
+            for (String hnswFile: hnswFiles) {
                 String hnswCompoundFile = hnswFile + "c";
                 dir.copyFrom(dir, hnswFile, hnswCompoundFile, context);
             }
