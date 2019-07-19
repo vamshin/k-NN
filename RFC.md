@@ -35,28 +35,25 @@ KNN indices need ```KNNCodec``` to write and read hnsw indices created part of e
 ``` JSON
 PUT /myindex
 {
-  "settings" : {
+  "settings": {
     "index": {
       "codec": "KNNCodec"
     }
   },
   "mappings": {
-    "my_images": {
-      "properties": {
-        "my_vector1": {
-          "type": "knn_vector",
-
-        },
-        "my_vector2": {
-          "type": "knn_vector"
-        },
-        "my_vector3": {
+    "properties": {
+      "my_vector1": {
+        "type": "knn_vector"
+      },
+      "my_vector2": {
+        "type": "knn_vector"
+      },
+      "my_vector3": {
         "type": "knn_vector"
       }
     }
   }
 }
-
 ```
 In the above example, we are creating K-NN index with 3 ```knn_vector``` fields namely my_vector1, my_vector2, my_vector3. We could index different
 category of embeddings into these fields and query the nearest neighbors for each field independently.

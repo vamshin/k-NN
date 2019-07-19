@@ -64,8 +64,6 @@ apply plugin: 'elasticsearch.esplugin'
 apply plugin: 'jacoco'
 apply from: 'build-tools/knnplugin-coverage.gradle'
 
-apply from: 'build-tools/prepare-offline-repo.gradle'
-
 jacoco {
     toolVersion = "0.8.3"
 }
