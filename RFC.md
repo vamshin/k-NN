@@ -3,7 +3,7 @@
 The purpose of this request for comments (RFC) is to introduce our plans to enhance Open Distro for Elasticsearch with a new KNN plugin and collect feedback and discuss our plans with the community. This RFC is meant to cover the high-level functionality of the KNN plugin and does not go into implementation details and architecture.
 
 ## Problem Statement
-Customers with similarity-based search use cases such as face search, fraud detection and recommendation systems have a need for finding K-Nearest Neighbor (KNN) using the machine learning models. The existing solutions for KNN search were inefficient, did not support incremental updates and also did not operate well at scale. Brute-force KNN search using CPU is very computationally intensive and generally too slow for large-scale real-time search applications.
+Customers with similarity-based search use cases such as face search, fraud detection and recommendation systems have a need for finding K-Nearest Neighbor (KNN) using the machine learning models. The existing solutions for KNN search were inefficient and did not operate well at scale. Brute-force KNN search using CPU is very computationally intensive and generally too slow for large-scale real-time search applications.
 
 ## Proposed Solution
 
