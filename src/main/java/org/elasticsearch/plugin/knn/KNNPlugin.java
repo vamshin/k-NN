@@ -45,6 +45,17 @@ import static java.util.Collections.singletonList;
  * Entry point for the KNN plugin where we define mapper for knn_vector type
  * and new query clause "knn"
  *
+ *
+ * Example Mapping for knn_vector type
+ *
+ * "mappings": {
+ *   "properties": {
+ *     "my_vector": {
+ *       "type": "knn_vector"
+ *     }
+ *   }
+ * }
+ *
  * Example Query
  *
  *   "knn": {
@@ -53,6 +64,7 @@ import static java.util.Collections.singletonList;
  *      "k": 3
  *    }
  *   }
+ *
  */
 public class KNNPlugin extends Plugin implements MapperPlugin, SearchPlugin, ActionPlugin {
 
