@@ -51,7 +51,7 @@ public class KNNScorer extends Scorer {
 
     @Override
     public float getMaxScore(int upTo) throws IOException {
-        return 1.0f/0.0f;
+        return Float.MAX_VALUE;
     }
 
     @Override
