@@ -34,7 +34,9 @@ import java.util.concurrent.Executors;
 import java.util.function.ToLongBiFunction;
 
 /**
- * KNNIndex level caching with weight based, time based evictions
+ * KNNIndex level caching with weight based, time based evictions. This caching helps us
+ * to manage the hnsw graphs in the memory and garbage collect them after specified timeout
+ * or when weightCircuitBreaker is hit.
  */
 public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasable {
 
@@ -48,7 +50,7 @@ public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasa
     public Cache<String, KNNIndex> cache;
 
     // TODO Expose these as Elasticsearch settings
-    private final long sizeInBytes = 1024 * 1024;
+    private final long sizeInBytes = 1 * 1024 * 1024 * 1024; //1GB
 
     public static void setKnnIndexFileListener(KNNIndexFileListener knnIndexFileListener) {
         KNNIndexCache.knnIndexFileListener = knnIndexFileListener;
@@ -61,39 +63,59 @@ public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasa
             cacheBuilder.setMaximumWeight(sizeInBytes).weigher(new KNNIndexWeight());
         }
 
-        if(timestampEnabled) {
+        if (timestampEnabled) {
             cacheBuilder.setExpireAfterAccess(TimeValue.timeValueMinutes(20)).setExpireAfterWrite(TimeValue.timeValueSeconds(60));
         }
         cache = cacheBuilder.build();
     }
 
+    /**
+     * Invalidates the cache and shutdown the executor
+     */
     @Override
     public void close() {
         executor.execute(() -> cache.invalidateAll());
         executor.shutdown();
     }
 
+    /**
+     * On cache eviction, the corresponding hnsw index will be deleted from heap.
+     *
+     * @param removalNotification key, value that got evicted.
+     */
     @Override
     public void onRemoval(RemovalNotification<String, KNNIndex> removalNotification) {
         try {
             logger.debug("[KNN] Cache evicted. Key {}, Reason: {}", removalNotification.getKey()
                                  ,removalNotification.getRemovalReason());
             KNNIndex knnIndex = removalNotification.getValue();
-            executor.execute(() -> knnIndex.gc());
             // This flag is to ensure, callers already holding the object do not query if index
             // is deleted
             knnIndex.isDeleted.set(true);
+            executor.execute(() -> knnIndex.gc());
         } catch(Exception ex) {
             logger.error("Exception occured while performing gc for hnsw index " + removalNotification.getKey());
         }
     }
 
+    /**
+     * Adds entry to the cache
+     *
+     * @param key indexpath
+     * @param value heap pointer of the index in memory
+     */
     public void addEntry(String key, KNNIndex value) {
         if(Strings.isNullOrEmpty(key))
             throw new IllegalStateException("indexPath should be valid key");
         cache.put(key, value);
     }
 
+    /**
+     * Loads corresponding index for the given key to memory and returns the index object.
+     *
+     * @param key indexPath where the serialized hnsw graph is stored
+     * @return KNNIndex holding the heap pointer of the loaded graph
+     */
     public KNNIndex getIndex(String key) {
         try {
             return cache.computeIfAbsent(key, indexPathUrl -> computeIndex(indexPathUrl));
@@ -103,6 +125,14 @@ public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasa
         return null;
     }
 
+    /**
+     * Loads hnsw index to memory. Registers the location of the serialized graph with ResourceWatcher.
+     *
+     * @param indexPathUrl path for serialized hnsw graph
+     * @return KNNIndex holding the heap pointer of the loaded graph
+     * @throws Exception Exception could occur when registering the index path
+     * to Resource watcher
+     */
     public KNNIndex computeIndex(String indexPathUrl) throws Exception {
         if(Strings.isNullOrEmpty(indexPathUrl))
             throw new IllegalStateException("indexPath is null while performing load index");
@@ -111,6 +141,9 @@ public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasa
         return KNNIndex.loadIndex(indexPathUrl);
     }
 
+    /**
+     * Class to compute the weight of the cache entry
+     */
     class KNNIndexWeight implements ToLongBiFunction<String, KNNIndex> {
         @Override
         public long applyAsLong(String s, KNNIndex knnIndex) {

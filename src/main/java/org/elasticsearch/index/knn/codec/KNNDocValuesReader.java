@@ -28,11 +28,11 @@ import java.util.List;
 /**
  * Reader for KNNDocValues from the segments
  */
-class KNNDocValuesProducer extends EmptyDocValuesProducer {
+class KNNDocValuesReader extends EmptyDocValuesProducer {
 
     private MergeState mergeState;
 
-    KNNDocValuesProducer(MergeState mergeState) {
+    KNNDocValuesReader(MergeState mergeState) {
         this.mergeState = mergeState;
     }
 

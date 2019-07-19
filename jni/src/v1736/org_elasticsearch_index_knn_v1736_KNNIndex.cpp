@@ -1,26 +1,15 @@
-#include <iostream>
-#include <thread>
-#include <chrono>
 #include "org_elasticsearch_index_knn_v1736_KNNIndex.h"
 
 #include "init.h"
 #include "index.h"
 #include "params.h"
-#include "rangequery.h"
 #include "knnquery.h"
 #include "knnqueue.h"
 #include "methodfactory.h"
 #include "spacefactory.h"
 #include "space.h"
 
-using std::cout;
-using std::endl;
-using std::thread;
 using std::vector;
-using std::chrono::system_clock;
-using std::chrono::duration_cast;
-using std::chrono::milliseconds;
-using std::chrono::microseconds;
 
 using similarity::initLibrary;
 using similarity::AnyParams;
@@ -159,8 +148,8 @@ JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_v1736_KNNIndex_gc(JNIEnv
     try {
         jclass indexClass = env->GetObjectClass(indexObject);
         jmethodID getIndex = env->GetMethodID(indexClass, "getIndex", "()J");
+        // index heap pointer
         jlong indexValue = env->CallLongMethod(indexObject, getIndex);
-        cout << "Index gc value: " << indexValue << endl;
         Index<float>* index = reinterpret_cast<Index<float>*>(indexValue);
         has_exception_in_stack(env);
         delete index;

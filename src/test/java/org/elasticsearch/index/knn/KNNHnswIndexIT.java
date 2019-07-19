@@ -58,7 +58,7 @@ public class KNNHnswIndexIT extends ESIntegTestCase {
         LeafReaderContext lrc = reader.getContext().leaves().iterator().next(); // leaf reader context
         SegmentReader segmentReader = (SegmentReader) FilterLeafReader.unwrap(lrc.reader());
         String hnswFileExtension = segmentReader.getSegmentInfo().info.getUseCompoundFile()
-                                           ? KNNCodec.HNSW_COMPUND_EXTENSION : KNNCodec.HNSW_EXTENSION;
+                                           ? KNNCodec.HNSW_COMPOUND_EXTENSION : KNNCodec.HNSW_EXTENSION;
         String hnswSuffix = "test_vector" + hnswFileExtension;
         List<String> hnswFiles = segmentReader.getSegmentInfo().files().stream()
                                               .filter(fileName -> fileName.endsWith(hnswSuffix))

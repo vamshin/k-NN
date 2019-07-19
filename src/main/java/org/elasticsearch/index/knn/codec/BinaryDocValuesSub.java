@@ -35,7 +35,7 @@ class BinaryDocValuesSub extends DocIDMerger.Sub {
 
     BinaryDocValuesSub(MergeState.DocMap docMap, BinaryDocValues values) {
         super(docMap);
-        if(values == null || (values.docID() != -1)) {
+        if (values == null || (values.docID() != -1)) {
             throw new IllegalStateException("Doc values is either null or docID is not -1 ");
         }
         this.values = values;
