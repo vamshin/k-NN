@@ -5,6 +5,5 @@ build/
 .idea/
 !.idea/codeStyles/codeStyleConfig.xml
 .DS_Store
-offline-repo.zip
 *.log
 out/
