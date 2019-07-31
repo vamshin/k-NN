@@ -118,7 +118,8 @@ curl -X PUT "localhost:9200/myindex/_doc/5" -H 'Content-Type: application/json' 
 '
 ```
 
-* Querying K-Nearest neighborrs
+* Querying K-Nearest neighbors
+
 ```
 curl -X POST "localhost:9200/myindex/_search" -H 'Content-Type: application/json' -d'
 {"size" : 10,
