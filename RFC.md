@@ -15,9 +15,9 @@ Open Distro for Elasticsearch uses Non-Metric Space Library (NMSLIB), a highly e
 
     * [Lucene Codec](https://www.elastic.co/blog/what-is-an-apache-lucene-codec) named ‘KNNCodec’ which adds a new Lucene index file format for storing and retrieving the vectors in nmslib using a JNI layer.
 
-    * [Search plugin](https://static.javadoc.io/org.elasticsearch/elasticsearch/7.1.1/org/elasticsearch/plugins/SearchPlugin.html) which introduces a query clause called ```knn``` for processing the KNN query elements.
+    * [Search plugin](https://static.javadoc.io/org.elasticsearch/elasticsearch/7.2.0/org/elasticsearch/plugins/SearchPlugin.html) which introduces a query clause called ```knn``` for processing the KNN query elements.
 
-    * [Action plugin](https://static.javadoc.io/org.elasticsearch/elasticsearch/7.1.1/org/elasticsearch/plugins/ActionPlugin.html) to utilize Elasticsearch ResourceWatcher service for effective garbage collection management of hnsw indices
+    * [Action plugin](https://static.javadoc.io/org.elasticsearch/elasticsearch/7.2.0/org/elasticsearch/plugins/ActionPlugin.html) to utilize Elasticsearch ResourceWatcher service for effective garbage collection management of hnsw indices
 
 ####Highly scalable
 Easily leverage Elasticsearch’s distributed architecture to run high-scale k-NN search operations.  Unlike many of the common k-NN solutions, Open Distro for Elasticsearch does not use a brute-force approach to compute k-NN during the search operation, which causes exponential degradation in performance with scale. Instead, the solution indexes the k-NN data efficiently, enabling you to attain low latency even at high scale.

@@ -15,7 +15,7 @@ Please see our [documentation](https://opendistro.github.io/for-elasticsearch-do
 
 ## Build
 
-The package uses the [Gradle](https://docs.gradle.org/4.10.2/userguide/userguide.html) build system.
+The package uses the [Gradle](https://docs.gradle.org/5.5.1/userguide/userguide.html) build system.
 
 1. Checkout this package from version control.
 2. To build from command line set `JAVA_HOME` to point to a JDK >=12
