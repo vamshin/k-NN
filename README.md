@@ -1,7 +1,7 @@
 # Open Distro for Elasticsearch KNN
 ========================================
 
-Open Distro for Elasticsearch enables you to run nearest neighbor search on billions of documents across thousands of dimensions with the same ease as running any regular Elasticsearch query. Use aggregations and filter clauses to further refine your similarity search operations. K-NN similarity search power uses cases such as product recommendations, fraud detection, image and video search, related document search, and more
+Open Distro for Elasticsearch enables you to run nearest neighbor search on billions of documents across thousands of dimensions with the same ease as running any regular Elasticsearch query. Use aggregations and filter clauses to further refine your similarity search operations. K-NN similarity search power uses cases such as product recommendations, fraud detection, image and video search, related document search, and more.
 
 ## Documentation
 
