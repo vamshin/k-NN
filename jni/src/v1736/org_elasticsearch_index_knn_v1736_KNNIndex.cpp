@@ -1,8 +1,5 @@
 #include "org_elasticsearch_index_knn_v1736_KNNIndex.h"
 
-#include <iostream>
-#include <fstream>
-
 #include "init.h"
 #include "index.h"
 #include "params.h"
