@@ -64,7 +64,8 @@ public class KNNIndexCache implements RemovalListener<String, KNNIndex>, Releasa
         }
 
         if (timestampEnabled) {
-            cacheBuilder.setExpireAfterAccess(TimeValue.timeValueMinutes(20)).setExpireAfterWrite(TimeValue.timeValueSeconds(60));
+            // if the index is not accessed for 90 minutes it will be removed from memory.
+            cacheBuilder.setExpireAfterAccess(TimeValue.timeValueMinutes(90));
         }
         cache = cacheBuilder.build();
     }
