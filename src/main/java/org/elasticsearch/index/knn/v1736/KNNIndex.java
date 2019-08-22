@@ -68,8 +68,8 @@ public class KNNIndex {
      * @param indexPath absolute path of the index
      *
      */
-    public void computeWeight(String indexPath) {
-        if(!Strings.isNullOrEmpty(indexPath)) {
+    public void computeFileSize(String indexPath) {
+        if (!Strings.isNullOrEmpty(indexPath)) {
             File file = new File(indexPath);
             if (!file.exists() || !file.isFile()) {
                 logger.debug("File {} deleted. Skipping ", indexPath);
@@ -93,9 +93,9 @@ public class KNNIndex {
     public static KNNIndex loadIndex(String indexPath) {
         KNNIndex index = new KNNIndex();
         index.init(indexPath);
-        if(KNNIndexCache.weightCircuitBreakerEnabled)
+        if (KNNIndexCache.weightCircuitBreakerEnabled)
             // File size is treated as weight
-            index.computeWeight(indexPath);
+            index.computeFileSize(indexPath);
         return index;
     }
 

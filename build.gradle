@@ -64,8 +64,13 @@ allprojects {
 
 apply from: 'build-tools/brazil.gradle'
 apply plugin: 'elasticsearch.esplugin'
-
+apply plugin: 'jacoco'
+apply from: 'build-tools/knnplugin-coverage.gradle'
 apply from: 'build-tools/prepare-offline-repo.gradle'
+
+jacoco {
+    toolVersion = "0.8.3"
+}
 
 ext {
     projectSubstitutions = [:]
@@ -125,6 +130,9 @@ thirdPartyAudit.enabled = false
 def es_tmp_dir = rootProject.file('build/private/es_tmp').absoluteFile
 es_tmp_dir.mkdirs()
 
+test {
+    systemProperty 'tests.security.manager', 'false'
+}
 
 integTestRunner {
     systemProperty 'tests.security.manager', 'false'
@@ -149,6 +157,8 @@ integTestCluster {
     distribution = es_distribution
     systemProperty "java.library.path", "$rootDir/buildSrc"
 }
+
+check.dependsOn jacocoTestReport
 
 run {
     distribution = es_distribution

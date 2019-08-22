@@ -78,7 +78,7 @@ public class KNNWeight extends Weight {
              * In case of compound file, extension would be .hnswc otherwise .hnsw
              */
             String hnswFileExtension = reader.getSegmentInfo().info.getUseCompoundFile()
-                                               ? KNNCodec.HNSW_COMPUND_EXTENSION : KNNCodec.HNSW_EXTENSION;
+                                               ? KNNCodec.HNSW_COMPOUND_EXTENSION : KNNCodec.HNSW_EXTENSION;
             String hnswSuffix = knnQuery.getField() + hnswFileExtension;
             List<String> hnswFiles = reader.getSegmentInfo().files().stream()
                                            .filter(fileName -> fileName.endsWith(hnswSuffix))

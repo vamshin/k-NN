@@ -1,3 +1,18 @@
+/*
+ *   Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License").
+ *   You may not use this file except in compliance with the License.
+ *   A copy of the License is located at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   or in the "license" file accompanying this file. This file is distributed
+ *   on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ *   express or implied. See the License for the specific language governing
+ *   permissions and limitations under the License.
+ */
+
 package org.elasticsearch.index.knn.codec;
 
 import org.apache.logging.log4j.LogManager;
@@ -31,8 +46,8 @@ public class KNNCompoundFormat extends CompoundFormat {
     @Override
     public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
         /**
-         * If hnsw file present, remove it from compounding file.
-         * We do not add header to hnsw because of nmslib constraints.
+         * If hnsw file present, remove it from the compounding file list to avoid header/footer checks
+         * and create a new compounding file format with extension .hnswc.
          */
         Set<String> hnswFiles = si.files().stream().filter(file -> file.endsWith(KNNCodec.HNSW_EXTENSION))
                                      .collect(Collectors.toSet());
@@ -40,8 +55,8 @@ public class KNNCompoundFormat extends CompoundFormat {
         Set<String> segmentFiles = new HashSet<>();
         segmentFiles.addAll(si.files());
 
-        if(!hnswFiles.isEmpty()) {
-            for(String hnswFile: hnswFiles) {
+        if (!hnswFiles.isEmpty()) {
+            for (String hnswFile: hnswFiles) {
                 String hnswCompoundFile = hnswFile + "c";
                 dir.copyFrom(dir, hnswFile, hnswCompoundFile, context);
             }

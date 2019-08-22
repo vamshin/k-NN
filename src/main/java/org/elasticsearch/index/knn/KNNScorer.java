@@ -21,7 +21,6 @@ import org.apache.lucene.search.Weight;
 
 import java.util.Map;
 
-
 /**
  * <p>
  * <code>KNNScorer</code> exposes an {@link #iterator()} over documents
