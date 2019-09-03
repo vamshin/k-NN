@@ -91,10 +91,10 @@ JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_v1736_KNNIndex_saveIndex
         delete space;
     }
     catch (...) {
-        if (!object_ids) { env->ReleaseIntArrayElements(ids, object_ids, 0); }
+        if (object_ids) { env->ReleaseIntArrayElements(ids, object_ids, 0); }
         dataset.clear();
-        if (!index) { delete index; }
-        if (!space) { delete space; }
+        if (index) { delete index; }
+        if (space) { delete space; }
         catch_cpp_exception_and_throw_java(env);
     }
 }
@@ -137,8 +137,8 @@ JNIEXPORT jobjectArray JNICALL Java_org_elasticsearch_index_knn_v1736_KNNIndex_q
         return results;
     }
     catch (...) {
-        if (!space) { delete space; }
-        if (!result) { delete result; }
+        if (space) { delete space; }
+        if (result) { delete result; }
         catch_cpp_exception_and_throw_java(env);
     }
     return NULL;
@@ -167,8 +167,8 @@ JNIEXPORT void JNICALL Java_org_elasticsearch_index_knn_v1736_KNNIndex_init(JNIE
         delete dataset;
     }
     catch (...) {
-        if (!space) { delete space; }
-        if (!dataset) { delete dataset; }
+        if (space) { delete space; }
+        if (dataset) { delete dataset; }
         catch_cpp_exception_and_throw_java(env);
     }
 }
