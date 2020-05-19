@@ -2,8 +2,7 @@ name: Build and Test k-NN
 on:
   push:
     branches:
-      - master
-      - opendistro-*
+      - dummmy
 
 jobs:
   Build-k-NN:
